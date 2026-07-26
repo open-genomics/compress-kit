@@ -572,26 +572,6 @@
   color: #8b9fef;
 }
 
-.ck-lang-go {
-  background: rgba(0, 173, 216, 0.15);
-  color: #00add8;
-}
-
-.dark .ck-lang-go {
-  background: rgba(0, 173, 216, 0.2);
-  color: #4dd7f5;
-}
-
-.ck-lang-rust {
-  background: rgba(222, 110, 75, 0.15);
-  color: #de6e4b;
-}
-
-.dark .ck-lang-rust {
-  background: rgba(222, 110, 75, 0.2);
-  color: #f4977b;
-}
-
 /* === Stats Bar === */
 .ck-stats-bar {
   display: flex;

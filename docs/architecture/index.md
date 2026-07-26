@@ -100,10 +100,10 @@ if (result.ok()) { use(result.value); }
 
 | 算法 | 文件 | 核心函数 |
 |------|------|----------|
-| Huffman | `huffman/main.cpp` | `compress_file()`, `decompress_file()` |
+| Huffman | `huffman/main.cpp` | `huffman_encode_buffer()`, `huffman_decode_buffer()` |
 | Arithmetic | `arithmetic/main.cpp` | `ArithmeticEncoder`, `ArithmeticDecoder` |
-| Range | `range/main.cpp` | `ArithmeticEncoder`, `ArithmeticDecoder` |
-| RLE | `rle/main.cpp` | `compress_file()`, `decompress_file()` |
+| Range | `range/main.cpp` | `RangeEncoder`, `RangeDecoder` |
+| RLE | `rle/main.cpp` | `rle_encode_buffer()`, `rle_decode_buffer()` |
 
 ### 4. Shared Utilities（共享工具）
 

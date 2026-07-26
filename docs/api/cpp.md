@@ -33,9 +33,9 @@ cmake -S . -B build && cmake --build build
 
 ### 内部结构
 
-- `BitWriter` / `BitReader` — 比特级 I/O 类
-- `Node` — Huffman 树节点（自定义删除器）
-- `compress_file()` / `decompress_file()` — 主编/解码函数
+- `BitWriter` / `BitReader` — 共享比特级 I/O（`bit_io.hpp`）
+- `Node` — Huffman 树节点，存储于 `vector<Node>` arena（索引代替指针）
+- `huffman_encode_buffer()` / `huffman_decode_buffer()` — 内存编/解码入口
 
 ### 文件格式
 
@@ -59,8 +59,8 @@ cmake -S . -B build && cmake --build build
 
 ### 关键类
 
-- `ArithmeticEncoder` — 状态机，包含 `low`、`high`、`pendingBits`
-- `ArithmeticDecoder` — 解码器，包含 `code` 初始化
+- `ArithmeticEncoder` — 编码器，包含 `low_`、`high_`、`pending_`
+- `ArithmeticDecoder` — 解码器，包含 `code_` 初始化
 
 ---
 
@@ -103,8 +103,8 @@ cmake -S . -B build && cmake --build build
 |------|------|
 | 单文件核心 | 每个算法核心在一个 `main.cpp` 中 |
 | 共享依赖 | 使用 `algorithms/shared/cpp/` 中的公共代码 |
-| 错误处理 | `fprintf(stderr, ...)` + `exit(1)` |
-| 内存管理 | `std::unique_ptr` + 自定义删除器 |
+| 错误处理 | `throw std::runtime_error`，由 buffer 层捕获 |
+| 内存管理 | `std::vector` arena（索引代替指针） |
 
 ## 共享 Buffer 门面
 

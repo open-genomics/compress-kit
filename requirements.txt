@@ -1,6 +1,0 @@
-# Python dependencies for testing and benchmarking
-# Currently uses only standard library modules
-
-# Future dependencies (uncomment when needed):
-# pytest>=7.0.0    # for enhanced unit testing
-# pyperf>=2.0.0    # for advanced benchmarking

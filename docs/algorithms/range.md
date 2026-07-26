@@ -8,28 +8,27 @@ Range Coder 使用固定宽度整数维护区间 [low, low + range)。与 Arithm
 
 ```cpp
 void encode(const vector<uint8_t>& data,
-            const uint32_t cumFreq[257]) {
-    uint64_t low = 0;
-    uint64_t range = MAX_RANGE;
-    uint64_t total = cumFreq[256];
-    
+            const vector<uint32_t>& cumFreq) {
+    uint32_t low = 0;
+    uint32_t high = UINT32_MAX;
+    uint32_t total = cumFreq.back();
+
     for (uint8_t symbol : data) {
+        uint64_t range = uint64_t(high) - low + 1;
         uint32_t symLow = cumFreq[symbol];
         uint32_t symHigh = cumFreq[symbol + 1];
-        
-        // total 必须非零：空频率表是非法输入，需在编码前校验
-        range /= total;
-        low += symLow * range;
-        range *= (symHigh - symLow);
-        
-        // 重归一化
-        while (range < MIN_RANGE) {
-            output_byte(low >> 56);
+
+        high = low + uint32_t((range * symHigh) / total - 1);
+        low  = low + uint32_t((range * symLow) / total);
+
+        // 字节级重归一化
+        while ((low ^ high) < (1u << 24)) {
+            output_byte(low >> 24);
             low <<= 8;
-            range <<= 8;
+            high = (high << 8) | 0xFF;
         }
     }
-    // 输出最终字节
+    // 输出最终 4 字节
     flush(low);
 }
 ```
@@ -63,7 +62,7 @@ void encode(const vector<uint8_t>& data,
 | 时间（编码） | O(n) | 与 Arithmetic 类似 |
 | 时间（解码） | O(n) | 字节级 I/O 更快 |
 | 空间 | O(σ) | 累积频率表 |
-| 精度 | 固定 | 64 位整数 |
+| 精度 | 固定 | 32 位整数 |
 
 ## 性能特征
 

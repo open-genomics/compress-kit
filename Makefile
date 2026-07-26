@@ -1,4 +1,4 @@
-.PHONY: build test test-data test-conformance test-cli-smoke clean format lint help
+.PHONY: build test test-data test-cli-smoke clean format lint help
 
 # ── Build ──────────────────────────────────────────────────────────────────
 
@@ -11,9 +11,6 @@ build:
 test: test-data build
 	ctest --test-dir build --output-on-failure
 	$(MAKE) test-cli-smoke
-
-test-conformance: test-data build
-	python3 tests/conformance/run_cli_smoke.py
 
 test-cli-smoke: test-data build
 	python3 tests/conformance/run_cli_smoke.py

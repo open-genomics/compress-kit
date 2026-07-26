@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, watchEffect } from 'vue'
-import { useData } from 'vitepress'
 import benchmarkData from '../../data/benchmarks.json'
 import { getBenchmarkContent } from '../../data/site-content.mjs'
 import { getBarHeight as getMetricBarHeight, isBestCompressionRatio } from './benchmarkChartMetrics.js'
@@ -18,9 +17,7 @@ interface BenchmarkResult {
 }
 
 const results = ref<BenchmarkResult[]>(benchmarkData.results)
-const { localeIndex } = useData()
-const locale = computed(() => (localeIndex.value === 'root' ? 'en' : localeIndex.value))
-const content = computed(() => getBenchmarkContent(locale.value))
+const content = computed(() => getBenchmarkContent('zh'))
 
 const algorithms = computed(() => content.value.algorithms.map(entry => entry.id))
 const languages = computed(() => content.value.languages.map(entry => entry.id))

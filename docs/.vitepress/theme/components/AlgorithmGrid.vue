@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useData, withBase } from 'vitepress'
+import { withBase } from 'vitepress'
 import { computed } from 'vue'
 import { getAlgorithmCards } from '../../data/site-content.mjs'
 
-const { localeIndex } = useData()
-const lang = computed(() => localeIndex.value === 'root' ? 'en' : localeIndex.value)
-const algorithms = computed(() => getAlgorithmCards(lang.value))
-const algoLink = (slug: string) => withBase(`/${lang.value}/algorithms/${slug}`)
+const algorithms = computed(() => getAlgorithmCards('zh'))
+const algoLink = (slug: string) => withBase(`/algorithms/${slug}`)
 
 const getCompressionBadgeClass = (level: string) => {
   switch (level) {

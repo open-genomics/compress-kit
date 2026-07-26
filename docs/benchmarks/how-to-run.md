@@ -51,7 +51,7 @@
 |------|----------|------|
 | `random_1MiB.bin` | `os.urandom(1024*1024)` | 1 MiB |
 | `random_10MiB.bin` | `os.urandom(10*1024*1024)` | 10 MiB |
-| `repetitive_10MiB.bin` | 重复 256 字节模式 | 10 MiB |
+| `repetitive_10MiB.bin` | 随机字节值 + 随机 run 长度 [4, 4096] | 10 MiB |
 | `textlike_10MiB.bin` | 加权英文字母 | 10 MiB |
 | `small_dictionary_like.bin` | 小型重复词典风格样本 | 约 8 KiB |
 

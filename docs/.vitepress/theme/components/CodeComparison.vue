@@ -20,8 +20,6 @@ const activeExample = computed(() => props.examples[activeIndex.value])
 const languageClass = (lang: string): string => {
   const classes: Record<string, string> = {
     cpp: 'ck-lang-cpp',
-    go: 'ck-lang-go',
-    rust: 'ck-lang-rust'
   }
   return classes[lang] || ''
 }
@@ -29,8 +27,6 @@ const languageClass = (lang: string): string => {
 const languageIcon = (lang: string): string => {
   const icons: Record<string, string> = {
     cpp: '⚡',
-    go: '🔵',
-    rust: '⚙️'
   }
   return icons[lang] || '💻'
 }
@@ -141,16 +137,6 @@ const copyCode = async () => {
 .tab-button.active.ck-lang-cpp {
   border-color: #667eea;
   background: rgba(102, 126, 234, 0.1);
-}
-
-.tab-button.active.ck-lang-go {
-  border-color: #00add8;
-  background: rgba(0, 173, 216, 0.1);
-}
-
-.tab-button.active.ck-lang-rust {
-  border-color: #de6e4b;
-  background: rgba(222, 110, 75, 0.1);
 }
 
 .tab-icon {

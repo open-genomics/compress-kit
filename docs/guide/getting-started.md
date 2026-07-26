@@ -82,8 +82,7 @@ make test
 |------|------|
 | `make build` | 构建所有算法实现（封装 CMake） |
 | `make test` | 运行单元测试、生命周期测试与 CLI smoke 测试 |
-| `make test-conformance` | 运行 CLI smoke 一致性测试 |
-| `make test-cli-smoke` | 同上，仅 CLI smoke |
+| `make test-cli-smoke` | 运行 CLI smoke 一致性测试 |
 | `make test-data` | 生成测试语料到 `tests/data/` |
 | `make format` | 用 clang-format 格式化所有 C++ 代码 |
 | `make lint` | clang-format dry-run 检查 |

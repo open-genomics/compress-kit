@@ -60,15 +60,13 @@ def generate_textlike_file(path: Path, size_bytes: int):
     rng = random.Random(2)
     alphabet = ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" "  \n.,;:!?-_")
     alphabet_bytes = alphabet.encode("ascii")
+    table = bytes(alphabet_bytes[i % len(alphabet_bytes)] for i in range(256))
     with path.open("wb") as f:
         remaining = size_bytes
         chunk_size = 1024 * 1024
         while remaining > 0:
             n = min(remaining, chunk_size)
-            buf = bytearray(n)
-            for i in range(n):
-                buf[i] = alphabet_bytes[rng.randrange(0, len(alphabet_bytes))]
-            f.write(buf)
+            f.write(rng.randbytes(n).translate(table))
             remaining -= n
 
 

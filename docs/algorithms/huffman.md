@@ -83,7 +83,3 @@ void buildHuffmanTree(const vector<uint32_t>& freq) {
 - [区间编码](/algorithms/range) - 整数实现的工程变体
 - [算法对比](/guide/algorithms) - 四种算法的选择指南
 - [基准测试](/benchmarks/results) - 实测性能数据
-
-- [Arithmetic](/algorithms/arithmetic) — 使用分数位的更优压缩
-- [Range Coder](/algorithms/range) — 生产级优化实现
-- [算法对比](/guide/algorithms)
