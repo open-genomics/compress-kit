@@ -3,7 +3,7 @@
 ## Project Identity
 
 - Product: **CompressKit** - C++17 compression laboratory
-- Repository: `LessUp/compress-kit`
+- Repository: `AICL-Lab/compress-kit`
 - Default branch: `master`
 
 ## Core Contract

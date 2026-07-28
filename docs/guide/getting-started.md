@@ -44,7 +44,7 @@ choco install mingw cmake python3 make
 ### 克隆仓库
 
 ```bash
-git clone https://github.com/LessUp/compress-kit.git
+git clone https://github.com/AICL-Lab/compress-kit.git
 cd compress-kit
 ```
 
@@ -120,4 +120,4 @@ dd if=tests/data/random_10MiB.bin of=small.bin bs=1024 count=100
 
 - 了解 [算法详解](/guide/algorithms) 及其差异
 - 阅读 [架构总览](/guide/architecture)
-- 查看 [CHANGELOG](https://github.com/LessUp/compress-kit/blob/master/CHANGELOG.md) 了解最新更新
+- 查看 [CHANGELOG](https://github.com/AICL-Lab/compress-kit/blob/master/CHANGELOG.md) 了解最新更新

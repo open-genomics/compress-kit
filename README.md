@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/LessUp/compress-kit/actions/workflows/ci.yml"><img src="https://github.com/LessUp/compress-kit/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
+  <a href="https://github.com/AICL-Lab/compress-kit/actions/workflows/ci.yml"><img src="https://github.com/AICL-Lab/compress-kit/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/许可证-MIT-green.svg" alt="License"></a>
 </p>
 
@@ -39,7 +39,7 @@ cd docs && npm ci && npm run dev
 ## 快速开始
 
 ```bash
-git clone https://github.com/LessUp/compress-kit.git
+git clone https://github.com/AICL-Lab/compress-kit.git
 cd compress-kit
 
 make build
