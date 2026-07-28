@@ -58,8 +58,14 @@ diff input.txt restored.txt
 ## 仓库结构
 
 ```text
-algorithms/   # huffman、arithmetic、range、rle；每个算法含 cpp/
-tests/        # 生成语料、CLI smoke 测试
+algorithms/
+  huffman/cpp/      # Huffman 编码 CLI
+  arithmetic/cpp/   # 算术编码 CLI
+  range/cpp/        # 区间编码 CLI
+  rle/cpp/          # RLE 行程编码 CLI
+  shared/cpp/       # 公共库（序列化、位读写、频率表、CLI 框架）
+docs/               # VitePress 中文文档站
+tests/              # 测试语料生成与 CLI smoke 测试
 ```
 
 ## 工程基线

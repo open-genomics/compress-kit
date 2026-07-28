@@ -32,6 +32,7 @@ Binary format compatibility is the primary constraint.
 - Maintain binary format compatibility (magic bytes, frequency table LE layout, RLE pair layout)
 - Security limits: 4 GiB input, 1 GiB output
 - Error messages in code must be English
+- User-facing documentation (README, docs/) must be in Simplified Chinese
 
 ## Change Policy
 
