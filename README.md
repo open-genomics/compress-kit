@@ -13,7 +13,7 @@ CompressKit 是一个面向学习与验证的压缩算法仓库：同一组经�
 C++17 实现，通过统一命令行契约和 round-trip 测试验证正确性。
 它不是黑盒压缩库，而是可以阅读、运行、对比和验证的算法实验室。
 
-📖 **在线文档**：<https://lessup.github.io/compress-kit/>
+📖 **在线文档**：<https://aicl-lab.github.io/compress-kit/>
 
 文档站包含算法详解、架构设计、API 参考与基准测试结果。如需本地预览：
 
@@ -78,4 +78,4 @@ tests/              # 测试语料生成与 CLI smoke 测试
 
 ## 许可证
 
-[MIT 许可证](LICENSE) · 版权所有 © 2025-2026 LessUp
+[MIT 许可证](LICENSE) · 版权所有 © 2025-2026 AICL-Lab
