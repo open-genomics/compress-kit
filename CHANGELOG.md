@@ -19,9 +19,10 @@ style categories and uses semantic versioning for releases.
 - Huffman decoding now uses 8-bit lookup table per internal node (~8x faster than bit-by-bit tree walk).
 - Range Coder now uses shared `frequency_table` utilities (was duplicating scale/cumulative/header logic).
 - `scale_frequencies` rewritten from O(N×M) decrement loop to O(N log N) proportional reduction.
-- `build_cumulative` now signals all-zero tables via empty result instead of silent fallback.
+- `build_cumulative` is now a plain prefix sum; all-zero/EOF-less tables are rejected at the entropy decode entry points instead.
 - Centralized constants (`SYMBOL_LIMIT`, `EOF_SYMBOL`, magic bytes, size limits) in `constants.hpp`.
 - Issue templates pruned of Go/Rust/OpenSpec/cross-language references; language scope reduced to C++17 / Python scripts / Docs (feature template adds CI).
+- CLI smoke suite now round-trips the large corpus (`random_1MiB`, `random_10MiB`, `repetitive_10MiB`, `textlike_10MiB`) in addition to the small corpus; the large files were generated but never exercised before.
 
 ### Added
 
@@ -39,6 +40,17 @@ style categories and uses semantic versioning for releases.
 - OpenSpec, Cursor, and Claude skill meta-tooling directories.
 - Governance docs (`CODE_OF_CONDUCT.md`, `SECURITY.md`, `CONTEXT.md`, `CONTRIBUTING.md`) and `.devcontainer/` - unnecessary for a hobby/learning project.
 - Stale streaming API, state-machine academy, ADRs, contributing, project-structure, and bibliography doc pages.
+
+### Fixed
+
+- **BREAKING (RCNC bitstream)**: Range coder renormalisation now keeps `range >= 2^24` (carryless `range` formulation with boundary snap). The previous loop only shifted while the top bytes of `low`/`high` matched, which let `range` collapse below the precision floor and **silently corrupted near-incompressible data** (e.g. 1 MiB of random bytes "encoded" to ~3 KB and could not be decoded). Previously written RCNC payloads are not decodable by this revision; header layout and magic are unchanged.
+- Range/arithmetic decoders could crash (division by zero) or run away on corrupt frequency tables. Decoders now validate the table: `freq[EOF] > 0` and 64-bit total `<= MAX_TOTAL`, and the symbol search never selects a zero-width interval.
+- Encoding rejected only inputs `> 4 GiB`, so an input of exactly 2^32 identical bytes wrapped the `uint32_t` frequency counter to 0 and **silently encoded to a ~1 KB file decoding to empty** (total data loss with exit code 0). Inputs must now be strictly smaller than `MAX_INPUT_SIZE`.
+- Huffman decoding of an all-zero / EOF-less frequency table silently returned empty output; it is now rejected as corrupt.
+- Arithmetic and range decoders rejected header-only (zero-payload) streams by silently returning empty / decoding unboundedly; both now throw `truncated stream` (encoders always emit at least one payload byte).
+- `test_lifecycle` relied on `assert()`, which `-DNDEBUG` compiles out in the default Release build - the suite passed without checking anything. Checks are now always active, and corrupt-input rejection cases were added.
+- RLE encode was missing the input-size check the other three encoders enforce.
+- Removed dead branches in `scale_frequencies` (unreachable `new_total == 0` fallback) and the now-unreachable single-leaf early return in the Huffman decoder.
 
 ### Clean Code: shared utilities & named constants
 

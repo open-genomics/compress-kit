@@ -44,6 +44,4 @@ add_executable(test_lifecycle
 )
 target_link_libraries(test_lifecycle PRIVATE compresskit_codec)
 target_compile_definitions(test_lifecycle PRIVATE COMPRESSKIT_NO_MAIN)
-# Tests use assert-only locals; relax unused-variable warnings in release builds.
-target_compile_options(test_lifecycle PRIVATE -Wno-unused-variable -Wno-unused-but-set-variable)
 add_test(NAME lifecycle COMMAND test_lifecycle)

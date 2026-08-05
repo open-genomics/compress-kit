@@ -1,14 +1,30 @@
-#include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <numeric>
+#include <stdexcept>
 #include <vector>
 
 #include "compresskit/algorithms.hpp"
 #include "compresskit/buffer_api.hpp"
+#include "compresskit/constants.hpp"
 #include "compresskit/frequency_table.hpp"
+#include "compresskit/serialization.hpp"
 
 namespace {
+
+// Checks stay active in Release builds (plain assert() is compiled out by
+// -DNDEBUG, which silently disabled this suite in the default build).
+int failures = 0;
+
+void check(bool cond, const char* expr, int line) {
+    if (!cond) {
+        std::fprintf(stderr, "FAIL test_lifecycle.cpp:%d: %s\n", line, expr);
+        ++failures;
+    }
+}
+
+#define CHECK(cond) check((cond), #cond, __LINE__)
 
 struct AlgorithmCase {
     const char* name;
@@ -18,11 +34,30 @@ struct AlgorithmCase {
 
 void test_roundtrip(const AlgorithmCase& algo, const std::vector<uint8_t>& input) {
     auto encoded = compresskit::encode_buffer(algo.encode, input);
-    assert(encoded.status == compresskit::StatusCode::OK);
-
+    CHECK(encoded.status == compresskit::StatusCode::OK);
+    if (!encoded.ok()) {
+        return;
+    }
     auto decoded = compresskit::decode_buffer(algo.decode, encoded.value);
-    assert(decoded.status == compresskit::StatusCode::OK);
-    assert(decoded.value == input);
+    CHECK(decoded.status == compresskit::StatusCode::OK);
+    CHECK(decoded.value == input);
+}
+
+template <typename Fn>
+void expect_throw(const char* label, Fn fn) {
+    try {
+        fn();
+        std::fprintf(stderr, "FAIL %s: expected exception, got success\n", label);
+        ++failures;
+    } catch (const std::exception&) {
+        // Rejection is the contract for corrupt input.
+    }
+}
+
+std::vector<uint8_t> header_only(const char (&magic)[4], const std::vector<uint32_t>& freq) {
+    std::vector<uint8_t> out;
+    compresskit::write_frequency_header(out, magic, freq);
+    return out;
 }
 
 std::vector<uint8_t> make_sequential(std::size_t n) {
@@ -39,6 +74,39 @@ std::vector<uint8_t> make_lcg(std::size_t n) {
         v[i] = static_cast<uint8_t>(state >> 24);
     }
     return v;
+}
+
+void test_rejects_corrupt_input(const AlgorithmCase& algo) {
+    const std::string label = algo.name;
+
+    expect_throw((label + ": bad magic").c_str(), [&] {
+        std::vector<uint8_t> garbage = {'X', 'X', 'X', 'X', 0, 0, 0, 0};
+        algo.decode(garbage);
+    });
+
+    // Frequency tables must carry an EOF symbol; without one the entropy
+    // decoders can never reach end-of-stream.
+    std::vector<uint32_t> no_eof(compresskit::SYMBOL_LIMIT, 1);
+    no_eof[compresskit::EOF_SYMBOL] = 0;
+    const char (&magic)[4] = label == "Huffman"      ? compresskit::HUFFMAN_MAGIC
+                             : label == "Arithmetic" ? compresskit::ARITHMETIC_MAGIC
+                             : label == "Range"      ? compresskit::RANGE_MAGIC
+                                                     : compresskit::RLE_MAGIC;
+    if (label != "RLE") {
+        expect_throw((label + ": frequency table without EOF").c_str(),
+                     [&] { algo.decode(header_only(magic, no_eof)); });
+        std::vector<uint32_t> zeros(compresskit::SYMBOL_LIMIT, 0);
+        expect_throw((label + ": all-zero frequency table").c_str(),
+                     [&] { algo.decode(header_only(magic, zeros)); });
+    }
+
+    // Truncating the payload of a real stream must fail loudly.
+    std::vector<uint8_t> data(1024);
+    std::iota(data.begin(), data.end(), uint8_t{0});
+    auto encoded = algo.encode(data);
+    CHECK(encoded.size() > 16);
+    expect_throw((label + ": truncated stream").c_str(),
+                 [&] { algo.decode(std::vector<uint8_t>(encoded.begin(), encoded.begin() + 16)); });
 }
 
 }  // namespace
@@ -68,17 +136,44 @@ int main() {
         {"all_256", all_256},
         {"sequential_1k", make_sequential(1024)},
         {"lcg_64k", make_lcg(65536)},
+        {"lcg_1mib", make_lcg(1 << 20)},
     };
 
     int passed = 0;
     for (const auto& algo : algorithms) {
         for (const auto& c : corpus) {
             test_roundtrip(algo, c.data);
-            ++passed;
-            std::printf("PASS %-12s %s\n", algo.name, c.label);
+            if (failures == 0) {
+                ++passed;
+                std::printf("PASS %-12s %s\n", algo.name, c.label);
+            }
+        }
+        test_rejects_corrupt_input(algo);
+        if (failures == 0) {
+            std::printf("PASS %-12s corrupt-input rejection\n", algo.name);
         }
     }
 
-    std::printf("test_lifecycle: %d round-trip(s) passed\n", passed);
+    // RLE pair validation.
+    expect_throw("RLE: count=0 pair", [] {
+        std::vector<uint8_t> f;
+        compresskit::write_magic(f, compresskit::RLE_MAGIC);
+        compresskit::write_u32_le(f, 0);
+        f.push_back('A');
+        compresskit::rle_decode_buffer(f);
+    });
+    expect_throw("RLE: count above output limit", [] {
+        std::vector<uint8_t> f;
+        compresskit::write_magic(f, compresskit::RLE_MAGIC);
+        compresskit::write_u32_le(f, UINT32_MAX);
+        f.push_back('A');
+        compresskit::rle_decode_buffer(f);
+    });
+
+    if (failures > 0) {
+        std::fprintf(stderr, "test_lifecycle: %d check(s) FAILED\n", failures);
+        return 1;
+    }
+    std::printf("test_lifecycle: %d round-trip(s) + corrupt-input checks passed\n", passed);
     return 0;
 }

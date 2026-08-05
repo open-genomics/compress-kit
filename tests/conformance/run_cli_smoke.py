@@ -74,12 +74,13 @@ def assert_round_trip(binary: Path, source: Path, encoded: Path, decoded: Path) 
 
 def main() -> int:
     corpus = [metadata.DATA_DIR / name for name in metadata.DEFAULT_CORPUS]
+    large_corpus = [metadata.DATA_DIR / name for name in metadata.LARGE_CORPUS]
 
     missing_bins = [a.binary for a in metadata.ALGORITHMS if not a.binary.is_file()]
     if missing_bins:
         raise SystemExit(f"missing binaries; run `make build` first:\n"
                          + "\n".join(str(p) for p in missing_bins))
-    missing_corpus = [p for p in corpus if not p.is_file()]
+    missing_corpus = [p for p in corpus + large_corpus if not p.is_file()]
     if missing_corpus:
         raise SystemExit(f"missing corpus; run `make test-data` first:\n"
                          + "\n".join(str(p) for p in missing_corpus))
@@ -107,6 +108,15 @@ def main() -> int:
                 assert_round_trip(binary, source, enc, dec)
                 checks += 1
                 print(f"PASS round-trip {algo.name} {source.name}")
+
+            # Large (multi-MiB) corpus: catches coder failures that only
+            # appear on long or incompressible inputs.
+            for source in large_corpus:
+                enc = tmpdir / f"{algo.name}-{source.name}.enc"
+                dec = tmpdir / f"{algo.name}-{source.name}.dec"
+                assert_round_trip(binary, source, enc, dec)
+                checks += 1
+                print(f"PASS round-trip {algo.name} {source.name} (large)")
 
     print(f"cli smoke passed: {checks} check(s)")
     return 0

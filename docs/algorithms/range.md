@@ -4,34 +4,41 @@ Range Coder 是 Arithmetic 的**整数实现等价物**。它使用整数区间�
 
 ## 工作原理
 
-Range Coder 使用固定宽度整数维护区间 [low, low + range)。与 Arithmetic 的位输出不同，Range Coder 输出**字节**，显著提高 I/O 效率。
+Range Coder 使用固定宽度整数维护半开区间 `[low, low + range)`。与 Arithmetic 的位输出不同，Range Coder 输出**字节**，显著提高 I/O 效率。
 
 ```cpp
 void encode(const vector<uint8_t>& data,
             const vector<uint32_t>& cumFreq) {
     uint32_t low = 0;
-    uint32_t high = UINT32_MAX;
+    uint32_t range = UINT32_MAX;
     uint32_t total = cumFreq.back();
 
     for (uint8_t symbol : data) {
-        uint64_t range = uint64_t(high) - low + 1;
-        uint32_t symLow = cumFreq[symbol];
-        uint32_t symHigh = cumFreq[symbol + 1];
+        // 重归一化保证 range >= (1 << 24) >= total，因此 r >= 1
+        uint32_t r = range / total;
+        low += r * cumFreq[symbol];
+        range = r * (cumFreq[symbol + 1] - cumFreq[symbol]);
 
-        high = low + uint32_t((range * symHigh) / total - 1);
-        low  = low + uint32_t((range * symLow) / total);
-
-        // 字节级重归一化
-        while ((low ^ high) < (1u << 24)) {
+        // 字节级重归一化：顶字节相同则输出；区间过窄且跨越顶字节
+        // 边界时，先把区间端点对齐到边界再输出（carryless 处理）
+        while ((low ^ (low + range)) < (1u << 24) || range < (1u << 24)) {
+            if ((low ^ (low + range)) >= (1u << 24)) {
+                range = -low & ((1u << 24) - 1);
+            }
             output_byte(low >> 24);
             low <<= 8;
-            high = (high << 8) | 0xFF;
+            range <<= 8;
         }
     }
     // 输出最终 4 字节
     flush(low);
 }
 ```
+
+> 关键点：只在「顶字节相同」时移位是不充分的——当区间已经很窄且恰好
+> 跨越顶字节边界时，不移位会使 `range` 跌破精度下限，导致后续符号的
+> 子区间塌缩为 0，在接近不可压缩的数据上静默丢失数据。因此循环条件
+> 必须同时检查 `range` 是否仍低于下限。
 
 ## Arithmetic vs Range Coder
 
