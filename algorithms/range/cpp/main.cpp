@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "compresskit/buffer_api.hpp"
+#include "compresskit/checksum.hpp"
 #include "compresskit/constants.hpp"
 #include "compresskit/frequency_table.hpp"
 #include "compresskit/serialization.hpp"
@@ -124,7 +125,7 @@ private:
 }  // namespace
 
 std::vector<uint8_t> rangecoder_encode_buffer(const std::vector<uint8_t>& input) {
-    if (input.size() >= compresskit::MAX_INPUT_SIZE) {
+    if (input.size() >= compresskit::MAX_RAW_SIZE) {
         throw std::runtime_error("range: input too large");
     }
     std::vector<uint32_t> freq = compresskit::build_entropy_frequencies(input, MAX_TOTAL);
@@ -140,13 +141,16 @@ std::vector<uint8_t> rangecoder_encode_buffer(const std::vector<uint8_t>& input)
     }
     encoder.encode_symbol(compresskit::EOF_SYMBOL, cumulative);
     encoder.finish();
+    compresskit::append_crc32(out);
     return out;
 }
 
 std::vector<uint8_t> rangecoder_decode_buffer(const std::vector<uint8_t>& input) {
+    std::size_t content = compresskit::verify_crc32(input, "range");
+    const uint8_t* data = input.data();
     std::size_t pos = 0;
-    std::vector<uint32_t> freq =
-        compresskit::read_magic_and_frequency_header(input, pos, compresskit::RANGE_MAGIC, "range");
+    std::vector<uint32_t> freq = compresskit::read_magic_and_frequency_header(
+        data, content, pos, compresskit::RANGE_MAGIC, "range");
     if (freq[compresskit::EOF_SYMBOL] == 0 || compresskit::frequency_total(freq) > MAX_TOTAL) {
         throw std::runtime_error("range: corrupt frequency table");
     }
@@ -154,18 +158,18 @@ std::vector<uint8_t> rangecoder_decode_buffer(const std::vector<uint8_t>& input)
 
     // The encoder always flushes STATE_BYTES of final state, so a shorter
     // payload cannot come from a valid encoder.
-    if (input.size() - pos < STATE_BYTES) {
+    if (content - pos < STATE_BYTES) {
         throw std::runtime_error("range: truncated stream");
     }
 
     std::vector<uint8_t> out;
-    RangeDecoder decoder(input.data() + pos, input.size() - pos);
+    RangeDecoder decoder(data + pos, content - pos);
     for (;;) {
         uint32_t sym = decoder.decode_symbol(cumulative);
         if (sym == compresskit::EOF_SYMBOL) {
             break;
         }
-        if (out.size() >= compresskit::MAX_OUTPUT_SIZE) {
+        if (out.size() >= compresskit::MAX_RAW_SIZE) {
             throw std::runtime_error("range: output size limit exceeded");
         }
         out.push_back(static_cast<uint8_t>(sym));

@@ -22,6 +22,8 @@ style categories and uses semantic versioning for releases.
 - `build_cumulative` is now a plain prefix sum; all-zero/EOF-less tables are rejected at the entropy decode entry points instead.
 - Centralized constants (`SYMBOL_LIMIT`, `EOF_SYMBOL`, magic bytes, size limits) in `constants.hpp`.
 - Issue templates pruned of Go/Rust/OpenSpec/cross-language references; language scope reduced to C++17 / Python scripts / Docs (feature template adds CI).
+- **BREAKING (all formats)**: Every compressed stream now ends with a little-endian CRC-32 trailer (4 bytes, zlib-compatible polynomial) covering all preceding bytes. Decoders verify the checksum before any parsing, so **any** bit corruption is rejected instead of silently decoding to wrong data. Streams written by earlier revisions are not readable; magics and field layouts are otherwise unchanged (project decision: no backward-compatibility layer).
+- **BREAKING (size limits)**: Unified size contract. `MAX_INPUT_SIZE` / `MAX_OUTPUT_SIZE` are replaced by `MAX_RAW_SIZE` (1 GiB: encode input must be strictly smaller; decode output may not exceed) and `MAX_COMPRESSED_SIZE` (8 GiB: decode input bound, needed because RLE expands incompressible data ~5x). Previously a file between 1 GiB and 4 GiB could be encoded but never decoded.
 - CLI smoke suite now round-trips the large corpus (`random_1MiB`, `random_10MiB`, `repetitive_10MiB`, `textlike_10MiB`) in addition to the small corpus; the large files were generated but never exercised before.
 
 ### Added
@@ -33,6 +35,8 @@ style categories and uses semantic versioning for releases.
 - `algorithms/shared/cpp/include/compresskit/serialization.hpp` - shared in-memory little-endian serialization helpers (`write_u32_le`, `write_magic`, `write_frequency_header`, `read_frequency_header`). Eliminates duplicated `push_u32` lambdas and `read_frequencies` across huffman/arithmetic/range (~90 lines removed).
 - `algorithms/shared/cpp/include/compresskit/bit_io.hpp` - shared `BitWriter` / `BitReader`. Eliminates duplicated `BitWriter` class across huffman/arithmetic (~28 lines removed).
 - Slimmed VitePress docs site (`docs/` + `docs-pages.yml` workflow) keeping only algorithms, architecture, and benchmarks content. API/architecture pages reflect the `BufferTransform`-based buffer layer and 3-value `StatusCode` enum.
+- `algorithms/shared/cpp/include/compresskit/checksum.hpp` - header-only CRC-32 (constexpr table), `append_crc32` / `verify_crc32` helpers.
+- Unit and CLI conformance cases asserting that single-byte corruption of any encoded stream is always detected (CRC path) and rejected with a non-zero exit code.
 
 ### Removed
 
@@ -45,7 +49,7 @@ style categories and uses semantic versioning for releases.
 
 - **BREAKING (RCNC bitstream)**: Range coder renormalisation now keeps `range >= 2^24` (carryless `range` formulation with boundary snap). The previous loop only shifted while the top bytes of `low`/`high` matched, which let `range` collapse below the precision floor and **silently corrupted near-incompressible data** (e.g. 1 MiB of random bytes "encoded" to ~3 KB and could not be decoded). Previously written RCNC payloads are not decodable by this revision; header layout and magic are unchanged.
 - Range/arithmetic decoders could crash (division by zero) or run away on corrupt frequency tables. Decoders now validate the table: `freq[EOF] > 0` and 64-bit total `<= MAX_TOTAL`, and the symbol search never selects a zero-width interval.
-- Encoding rejected only inputs `> 4 GiB`, so an input of exactly 2^32 identical bytes wrapped the `uint32_t` frequency counter to 0 and **silently encoded to a ~1 KB file decoding to empty** (total data loss with exit code 0). Inputs must now be strictly smaller than `MAX_INPUT_SIZE`.
+- Encoding rejected only inputs `> 4 GiB`, so an input of exactly 2^32 identical bytes wrapped the `uint32_t` frequency counter to 0 and **silently encoded to a ~1 KB file decoding to empty** (total data loss with exit code 0). Fixed via the unified limit contract: raw input must be strictly smaller than 1 GiB, far below any `uint32_t` counting hazard.
 - Huffman decoding of an all-zero / EOF-less frequency table silently returned empty output; it is now rejected as corrupt.
 - Arithmetic and range decoders rejected header-only (zero-payload) streams by silently returning empty / decoding unboundedly; both now throw `truncated stream` (encoders always emit at least one payload byte).
 - `test_lifecycle` relied on `assert()`, which `-DNDEBUG` compiles out in the default Release build - the suite passed without checking anything. Checks are now always active, and corrupt-input rejection cases were added.

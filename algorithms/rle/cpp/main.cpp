@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "compresskit/buffer_api.hpp"
+#include "compresskit/checksum.hpp"
 #include "compresskit/constants.hpp"
 #include "compresskit/serialization.hpp"
 
@@ -15,7 +16,7 @@
 namespace compresskit {
 
 std::vector<uint8_t> rle_encode_buffer(const std::vector<uint8_t>& input) {
-    if (input.size() >= compresskit::MAX_INPUT_SIZE) {
+    if (input.size() >= compresskit::MAX_RAW_SIZE) {
         throw std::runtime_error("RLE: input too large");
     }
     std::vector<uint8_t> out;
@@ -23,6 +24,7 @@ std::vector<uint8_t> rle_encode_buffer(const std::vector<uint8_t>& input) {
     compresskit::write_magic(out, compresskit::RLE_MAGIC);
 
     if (input.empty()) {
+        compresskit::append_crc32(out);
         return out;
     }
 
@@ -40,28 +42,31 @@ std::vector<uint8_t> rle_encode_buffer(const std::vector<uint8_t>& input) {
     }
     compresskit::write_u32_le(out, count);
     out.push_back(current);
+    compresskit::append_crc32(out);
     return out;
 }
 
 std::vector<uint8_t> rle_decode_buffer(const std::vector<uint8_t>& input) {
+    std::size_t content = compresskit::verify_crc32(input, "RLE");
+    const uint8_t* data = input.data();
     std::size_t pos = 0;
-    compresskit::verify_magic(input, pos, compresskit::RLE_MAGIC, "RLE");
+    compresskit::verify_magic(data, content, pos, compresskit::RLE_MAGIC, "RLE");
 
     std::vector<uint8_t> out;
-    while (pos < input.size()) {
-        if (pos + compresskit::RLE_PAIR_SIZE > input.size()) {
+    while (pos < content) {
+        if (pos + compresskit::RLE_PAIR_SIZE > content) {
             throw std::runtime_error("RLE: truncated count+value pair");
         }
         uint32_t count = 0;
         for (std::size_t b = 0; b < compresskit::U32_SIZE; ++b) {
-            count |= static_cast<uint32_t>(input[pos + b]) << (b * compresskit::BITS_PER_BYTE);
+            count |= static_cast<uint32_t>(data[pos + b]) << (b * compresskit::BITS_PER_BYTE);
         }
-        uint8_t value = input[pos + compresskit::U32_SIZE];
+        uint8_t value = data[pos + compresskit::U32_SIZE];
         pos += compresskit::RLE_PAIR_SIZE;
         if (count == 0) {
             throw std::runtime_error("RLE: count must not be 0");
         }
-        if (out.size() + count > compresskit::MAX_OUTPUT_SIZE) {
+        if (out.size() + count > compresskit::MAX_RAW_SIZE) {
             throw std::runtime_error("RLE: output size limit exceeded");
         }
         out.insert(out.end(), count, value);

@@ -130,28 +130,31 @@ if (result.ok()) { use(result.value); }
 
 ### 各算法格式
 
+所有格式都以 **CRC-32 尾部校验**（4 字节小端，覆盖校验和之前的全部字节）结尾，
+任何比特损坏都会在解码前被检出并拒绝。
+
 #### Huffman
 
 ```
-| HFMN | FreqCount (4B LE) | Frequencies (N×4B LE) | Bitstream |
+| HFMN | FreqCount (4B LE) | Frequencies (N×4B LE) | Bitstream | CRC-32 (4B LE) |
 ```
 
 #### Arithmetic
 
 ```
-| AENC | FreqCount (4B LE) | Frequencies (N×4B LE) | Bitstream |
+| AENC | FreqCount (4B LE) | Frequencies (N×4B LE) | Bitstream | CRC-32 (4B LE) |
 ```
 
 #### Range Coder
 
 ```
-| RCNC | FreqCount (4B LE) | Frequencies (N×4B LE) | Bytestream |
+| RCNC | FreqCount (4B LE) | Frequencies (N×4B LE) | Bytestream | CRC-32 (4B LE) |
 ```
 
 #### RLE
 
 ```
-| RLE\x00 | RunCount (4B LE) | Runs (Count × (4B + 1B)) |
+| RLE\x00 | Runs (Count × (4B LE + 1B)) | CRC-32 (4B LE) |
 ```
 
 ### 频率表格式
@@ -164,8 +167,8 @@ if (result.ok()) { use(result.value); }
 
 | 限制 | 值 | 目的 |
 |------|-----|------|
-| 输入大小上限 | 严格小于 4 GiB | 防止 `uint32_t` 频率计数回绕（恰好 2³² 同字节输入会回绕为 0）与解压缩炸弹攻击 |
-| 输出大小上限（仅解码） | 1 GiB | 防止解压缩炸弹攻击 |
+| 原始数据上限（编码输入 / 解码输出） | 严格小于 1 GiB | 编码输入可完整 round-trip；`uint32_t` 频率计数永不回绕；解码侧防止解压缩炸弹 |
+| 压缩输入上限（仅解码） | 严格小于 8 GiB | 压缩流可大于原始数据（RLE 对不可压缩输入最坏膨胀约 5×），为 round-trip 留出空间，同时约束读入内存的体积 |
 | 频率表总和上限（解码校验） | ≤ 2²⁴ | 熵编码解码器的除法不变量要求；超限或无 EOF 符号的表一律拒绝 |
 
 ## Deep Module 设计

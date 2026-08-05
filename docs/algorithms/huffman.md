@@ -55,6 +55,7 @@ void buildHuffmanTree(const vector<uint32_t>& freq) {
 | Magic | 4 字节 | `HFMN` (0x48 0x46 0x4D 0x4E) |
 | 频率表 | 257 × 4 字节 | 小端序 uint32 数组 |
 | 编码数据 | 可变 | 位流，填充到字节边界 |
+| CRC-32 | 4 字节 | 小端序，覆盖此前全部字节；解码前强制校验 |
 
 ## 压缩效率
 

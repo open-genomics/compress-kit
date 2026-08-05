@@ -40,12 +40,12 @@ inline void write_frequency_header(std::vector<uint8_t>& out, const char* magic,
 
 // Verifies the leading magic prefix. On success, advances `pos` past it.
 // Throws std::runtime_error with `<algo_name>: ...` on mismatch or truncation.
-inline void verify_magic(const std::vector<uint8_t>& input, std::size_t& pos,
+inline void verify_magic(const uint8_t* data, std::size_t size, std::size_t& pos,
                          const char* expected_magic, const char* algo_name) {
-    if (input.size() < MAGIC_SIZE) {
+    if (size < MAGIC_SIZE) {
         throw std::runtime_error(std::string(algo_name) + ": input too short");
     }
-    if (std::memcmp(input.data(), expected_magic, MAGIC_SIZE) != 0) {
+    if (std::memcmp(data, expected_magic, MAGIC_SIZE) != 0) {
         throw std::runtime_error(std::string(algo_name) + ": bad magic");
     }
     pos = MAGIC_SIZE;
@@ -53,14 +53,14 @@ inline void verify_magic(const std::vector<uint8_t>& input, std::size_t& pos,
 
 // Reads a frequency table following the magic prefix.
 // `pos` starts after the magic; `algo_name` prefixes error messages.
-inline std::vector<uint32_t> read_frequency_header(const std::vector<uint8_t>& input,
+inline std::vector<uint32_t> read_frequency_header(const uint8_t* data, std::size_t size,
                                                    std::size_t& pos, const char* algo_name) {
-    if (pos + U32_SIZE > input.size()) {
+    if (pos + U32_SIZE > size) {
         throw std::runtime_error(std::string(algo_name) + ": truncated frequency count");
     }
     uint32_t count = 0;
     for (std::size_t i = 0; i < U32_SIZE; ++i) {
-        count |= static_cast<uint32_t>(input[pos + i]) << (i * BITS_PER_BYTE);
+        count |= static_cast<uint32_t>(data[pos + i]) << (i * BITS_PER_BYTE);
     }
     pos += U32_SIZE;
     if (count != SYMBOL_LIMIT) {
@@ -68,12 +68,12 @@ inline std::vector<uint32_t> read_frequency_header(const std::vector<uint8_t>& i
     }
     std::vector<uint32_t> freq(count, 0);
     for (uint32_t i = 0; i < count; ++i) {
-        if (pos + U32_SIZE > input.size()) {
+        if (pos + U32_SIZE > size) {
             throw std::runtime_error(std::string(algo_name) + ": truncated frequency entry");
         }
         uint32_t v = 0;
         for (std::size_t b = 0; b < U32_SIZE; ++b) {
-            v |= static_cast<uint32_t>(input[pos + b]) << (b * BITS_PER_BYTE);
+            v |= static_cast<uint32_t>(data[pos + b]) << (b * BITS_PER_BYTE);
         }
         freq[i] = v;
         pos += U32_SIZE;
@@ -83,12 +83,12 @@ inline std::vector<uint32_t> read_frequency_header(const std::vector<uint8_t>& i
 
 // Convenience: verify magic and read the trailing frequency table in one call.
 // `pos` starts at 0 and is advanced past magic + frequency table on success.
-inline std::vector<uint32_t> read_magic_and_frequency_header(const std::vector<uint8_t>& input,
+inline std::vector<uint32_t> read_magic_and_frequency_header(const uint8_t* data, std::size_t size,
                                                              std::size_t& pos,
                                                              const char* expected_magic,
                                                              const char* algo_name) {
-    verify_magic(input, pos, expected_magic, algo_name);
-    return read_frequency_header(input, pos, algo_name);
+    verify_magic(data, size, pos, expected_magic, algo_name);
+    return read_frequency_header(data, size, pos, algo_name);
 }
 
 }  // namespace compresskit

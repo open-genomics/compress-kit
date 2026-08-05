@@ -107,6 +107,15 @@ void test_rejects_corrupt_input(const AlgorithmCase& algo) {
     CHECK(encoded.size() > 16);
     expect_throw((label + ": truncated stream").c_str(),
                  [&] { algo.decode(std::vector<uint8_t>(encoded.begin(), encoded.begin() + 16)); });
+
+    // The trailing CRC-32 must catch any single-byte corruption, anywhere
+    // in the stream (header, payload, or the checksum itself).
+    for (std::size_t pos : {std::size_t{0}, encoded.size() / 2, encoded.size() - 1}) {
+        auto corrupted = encoded;
+        corrupted[pos] ^= 0x40;
+        expect_throw((label + ": corrupted byte detected").c_str(),
+                     [&] { algo.decode(corrupted); });
+    }
 }
 
 }  // namespace

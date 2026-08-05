@@ -7,6 +7,7 @@
 
 #include "compresskit/bit_io.hpp"
 #include "compresskit/buffer_api.hpp"
+#include "compresskit/checksum.hpp"
 #include "compresskit/constants.hpp"
 #include "compresskit/frequency_table.hpp"
 #include "compresskit/serialization.hpp"
@@ -149,7 +150,7 @@ void build_decode_table(const std::vector<Node>& nodes, int32_t root,
 }  // namespace
 
 std::vector<uint8_t> huffman_encode_buffer(const std::vector<uint8_t>& input) {
-    if (input.size() >= compresskit::MAX_INPUT_SIZE) {
+    if (input.size() >= compresskit::MAX_RAW_SIZE) {
         throw std::runtime_error("huffman: input too large");
     }
     std::vector<uint32_t> freq = compresskit::count_frequencies(input);
@@ -179,13 +180,16 @@ std::vector<uint8_t> huffman_encode_buffer(const std::vector<uint8_t>& input) {
     }
     std::vector<uint8_t> bits = writer.finish();
     out.insert(out.end(), bits.begin(), bits.end());
+    compresskit::append_crc32(out);
     return out;
 }
 
 std::vector<uint8_t> huffman_decode_buffer(const std::vector<uint8_t>& input) {
+    std::size_t content = compresskit::verify_crc32(input, "huffman");
+    const uint8_t* data = input.data();
     std::size_t pos = 0;
     std::vector<uint32_t> freq = compresskit::read_magic_and_frequency_header(
-        input, pos, compresskit::HUFFMAN_MAGIC, "huffman");
+        data, content, pos, compresskit::HUFFMAN_MAGIC, "huffman");
 
     if (freq[compresskit::EOF_SYMBOL] == 0) {
         throw std::runtime_error("huffman: frequency table missing EOF symbol");
@@ -201,15 +205,15 @@ std::vector<uint8_t> huffman_decode_buffer(const std::vector<uint8_t>& input) {
     std::vector<uint8_t> out;
     int32_t cur = root;
     bool saw_eof = false;
-    for (std::size_t i = pos; i < input.size(); ++i) {
-        const DecodeEntry& e = table[cur][input[i]];
+    for (std::size_t i = pos; i < content; ++i) {
+        const DecodeEntry& e = table[cur][data[i]];
         for (uint8_t k = 0; k < e.count; ++k) {
             uint32_t sym = e.symbols[k];
             if (sym == compresskit::EOF_SYMBOL) {
                 saw_eof = true;
                 break;
             }
-            if (out.size() >= compresskit::MAX_OUTPUT_SIZE) {
+            if (out.size() >= compresskit::MAX_RAW_SIZE) {
                 throw std::runtime_error("huffman: output size limit exceeded");
             }
             out.push_back(static_cast<uint8_t>(sym));

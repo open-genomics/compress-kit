@@ -72,6 +72,16 @@ def assert_round_trip(binary: Path, source: Path, encoded: Path, decoded: Path) 
         raise RuntimeError(f"{binary.name} round-trip mismatch for {source.name}")
 
 
+def assert_detects_corruption(binary: Path, source: Path, encoded: Path, decoded: Path) -> None:
+    run_checked([str(binary), "encode", str(source), str(encoded)])
+    blob = bytearray(encoded.read_bytes())
+    blob[len(blob) // 2] ^= 0x40
+    encoded.write_bytes(bytes(blob))
+    proc = run([str(binary), "decode", str(encoded), str(decoded)])
+    if proc.returncode == 0:
+        raise RuntimeError(f"{binary.name} decoded a corrupted stream for {source.name}")
+
+
 def main() -> int:
     corpus = [metadata.DATA_DIR / name for name in metadata.DEFAULT_CORPUS]
     large_corpus = [metadata.DATA_DIR / name for name in metadata.LARGE_CORPUS]
@@ -101,6 +111,12 @@ def main() -> int:
             assert_invalid_mode(binary, corpus[0], tmpdir / f"{algo.name}.invalid")
             checks += 1
             print(f"PASS arg-validation {algo.name}")
+
+            assert_detects_corruption(
+                binary, corpus[0],
+                tmpdir / f"{algo.name}-corrupt.enc", tmpdir / f"{algo.name}-corrupt.dec")
+            checks += 1
+            print(f"PASS corruption-detection {algo.name}")
 
             for source in corpus:
                 enc = tmpdir / f"{algo.name}-{source.name}.enc"

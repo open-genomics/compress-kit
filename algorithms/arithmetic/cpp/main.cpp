@@ -4,6 +4,7 @@
 
 #include "compresskit/bit_io.hpp"
 #include "compresskit/buffer_api.hpp"
+#include "compresskit/checksum.hpp"
 #include "compresskit/constants.hpp"
 #include "compresskit/frequency_table.hpp"
 #include "compresskit/serialization.hpp"
@@ -131,7 +132,7 @@ private:
 }  // namespace
 
 std::vector<uint8_t> arithmetic_encode_buffer(const std::vector<uint8_t>& input) {
-    if (input.size() >= compresskit::MAX_INPUT_SIZE) {
+    if (input.size() >= compresskit::MAX_RAW_SIZE) {
         throw std::runtime_error("arithmetic: input too large");
     }
     std::vector<uint32_t> freq = compresskit::build_entropy_frequencies(input, MAX_TOTAL);
@@ -151,24 +152,27 @@ std::vector<uint8_t> arithmetic_encode_buffer(const std::vector<uint8_t>& input)
 
     std::vector<uint8_t> bits = writer.finish();
     out.insert(out.end(), bits.begin(), bits.end());
+    compresskit::append_crc32(out);
     return out;
 }
 
 std::vector<uint8_t> arithmetic_decode_buffer(const std::vector<uint8_t>& input) {
+    std::size_t content = compresskit::verify_crc32(input, "arithmetic");
+    const uint8_t* data = input.data();
     std::size_t pos = 0;
     std::vector<uint32_t> freq = compresskit::read_magic_and_frequency_header(
-        input, pos, compresskit::ARITHMETIC_MAGIC, "arithmetic");
+        data, content, pos, compresskit::ARITHMETIC_MAGIC, "arithmetic");
     if (freq[compresskit::EOF_SYMBOL] == 0 || compresskit::frequency_total(freq) > MAX_TOTAL) {
         throw std::runtime_error("arithmetic: corrupt frequency table");
     }
     // finish() always emits at least one bit, so a valid stream has payload.
-    if (pos >= input.size()) {
+    if (pos >= content) {
         throw std::runtime_error("arithmetic: truncated stream");
     }
     std::vector<uint32_t> cumulative = compresskit::build_cumulative(freq);
 
     std::vector<uint8_t> out;
-    compresskit::BitReader reader(input.data() + pos, input.size() - pos);
+    compresskit::BitReader reader(data + pos, content - pos);
     ArithmeticDecoder decoder(reader);
 
     for (;;) {
@@ -176,7 +180,7 @@ std::vector<uint8_t> arithmetic_decode_buffer(const std::vector<uint8_t>& input)
         if (sym == compresskit::EOF_SYMBOL) {
             break;
         }
-        if (out.size() >= compresskit::MAX_OUTPUT_SIZE) {
+        if (out.size() >= compresskit::MAX_RAW_SIZE) {
             throw std::runtime_error("arithmetic: output size limit exceeded");
         }
         out.push_back(static_cast<uint8_t>(sym));
