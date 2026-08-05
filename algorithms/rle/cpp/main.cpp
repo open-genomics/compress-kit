@@ -15,6 +15,9 @@
 namespace compresskit {
 
 std::vector<uint8_t> rle_encode_buffer(const std::vector<uint8_t>& input) {
+    if (input.size() >= compresskit::MAX_INPUT_SIZE) {
+        throw std::runtime_error("RLE: input too large");
+    }
     std::vector<uint8_t> out;
     out.reserve(input.size() / 8 + compresskit::MAGIC_SIZE + compresskit::RLE_PAIR_SIZE);
     compresskit::write_magic(out, compresskit::RLE_MAGIC);

@@ -14,9 +14,14 @@ std::vector<uint32_t> count_frequencies(const std::vector<uint8_t>& data);
 // O(N) single pass: proportional reduction followed by at most one correction sweep.
 void scale_frequencies(std::vector<uint32_t>& freq, uint32_t max_total);
 
-// Builds cumulative frequency table of size freq.size()+1.
-// Returns empty vector on all-zero input (caller must reject).
+// Builds cumulative frequency table of size freq.size()+1. Callers must
+// ensure the table is non-zero (entropy entry points validate EOF presence).
 std::vector<uint32_t> build_cumulative(const std::vector<uint32_t>& freq);
+
+// 64-bit sum of a serialized frequency table. Entropy decoders require
+// 1 <= total <= MAX_TOTAL; tables outside that range cannot come from a
+// valid encoder and would break the coders' division invariants.
+uint64_t frequency_total(const std::vector<uint32_t>& freq);
 
 // Builds the entropy-coder frequency table: byte counts + EOF marker, scaled
 // to fit `max_total`. Shared by arithmetic and range coders.

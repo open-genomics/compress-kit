@@ -23,6 +23,8 @@ namespace compresskit {
 namespace {
 
 // Huffman code: bits stored with the first emitted bit at position (len-1).
+// With uint32 frequencies over 257 symbols the worst-case tree depth is
+// bounded by log_phi(257 * 2^32) < 60, so a 64-bit codeword always suffices.
 struct Code {
     uint64_t bits = 0;
     uint8_t len = 0;
@@ -147,7 +149,7 @@ void build_decode_table(const std::vector<Node>& nodes, int32_t root,
 }  // namespace
 
 std::vector<uint8_t> huffman_encode_buffer(const std::vector<uint8_t>& input) {
-    if (input.size() > compresskit::MAX_INPUT_SIZE) {
+    if (input.size() >= compresskit::MAX_INPUT_SIZE) {
         throw std::runtime_error("huffman: input too large");
     }
     std::vector<uint32_t> freq = compresskit::count_frequencies(input);
@@ -185,14 +187,13 @@ std::vector<uint8_t> huffman_decode_buffer(const std::vector<uint8_t>& input) {
     std::vector<uint32_t> freq = compresskit::read_magic_and_frequency_header(
         input, pos, compresskit::HUFFMAN_MAGIC, "huffman");
 
+    if (freq[compresskit::EOF_SYMBOL] == 0) {
+        throw std::runtime_error("huffman: frequency table missing EOF symbol");
+    }
+
     std::vector<Node> nodes;
     nodes.reserve(MAX_TREE_NODES);
     int32_t root = build_tree(freq, nodes);
-
-    // Single-symbol tree: root is a leaf. Output nothing (only EOF encoded).
-    if (is_leaf(nodes, root)) {
-        return {};
-    }
 
     std::vector<std::array<DecodeEntry, compresskit::BYTE_VALUES>> table;
     build_decode_table(nodes, root, table);

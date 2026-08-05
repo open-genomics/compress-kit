@@ -9,7 +9,9 @@ namespace compresskit {
 constexpr uint32_t SYMBOL_LIMIT = 257;
 constexpr uint32_t EOF_SYMBOL = SYMBOL_LIMIT - 1;
 
-// Security limits.
+// Security limits. Inputs must be strictly smaller than MAX_INPUT_SIZE so
+// per-byte uint32 frequency counts cannot wrap; decoded output may be at
+// most MAX_OUTPUT_SIZE bytes.
 constexpr uint64_t MAX_INPUT_SIZE = 4ULL * 1024 * 1024 * 1024;   // 4 GiB
 constexpr uint64_t MAX_OUTPUT_SIZE = 1ULL * 1024 * 1024 * 1024;  // 1 GiB
 

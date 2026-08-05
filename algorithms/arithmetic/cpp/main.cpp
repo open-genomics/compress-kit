@@ -86,15 +86,16 @@ public:
         uint64_t offset = code_ - low_;
         uint64_t value = ((offset + 1) * total - 1) / range;
 
-        // Binary search for symbol (O(log N)).
+        // Binary search: first symbol with cumulative[symbol + 1] > value
+        // (O(log N)). Never selects a zero-width interval on corrupt tables.
         uint32_t lo = 0;
-        uint32_t hi = static_cast<uint32_t>(cumulative.size() - 1);
-        while (lo + 1 < hi) {
+        uint32_t hi = static_cast<uint32_t>(cumulative.size() - 2);
+        while (lo < hi) {
             uint32_t mid = lo + (hi - lo) / 2;
-            if (static_cast<uint64_t>(cumulative[mid]) > value) {
+            if (static_cast<uint64_t>(cumulative[mid + 1]) > value) {
                 hi = mid;
             } else {
-                lo = mid;
+                lo = mid + 1;
             }
         }
         uint32_t symbol = lo;
@@ -130,14 +131,11 @@ private:
 }  // namespace
 
 std::vector<uint8_t> arithmetic_encode_buffer(const std::vector<uint8_t>& input) {
-    if (input.size() > compresskit::MAX_INPUT_SIZE) {
+    if (input.size() >= compresskit::MAX_INPUT_SIZE) {
         throw std::runtime_error("arithmetic: input too large");
     }
     std::vector<uint32_t> freq = compresskit::build_entropy_frequencies(input, MAX_TOTAL);
     std::vector<uint32_t> cumulative = compresskit::build_cumulative(freq);
-    if (cumulative.empty()) {
-        throw std::runtime_error("arithmetic: empty frequency table");
-    }
 
     std::vector<uint8_t> out;
     out.reserve(input.size() + compresskit::INITIAL_ENCODE_OVERHEAD);
@@ -160,10 +158,14 @@ std::vector<uint8_t> arithmetic_decode_buffer(const std::vector<uint8_t>& input)
     std::size_t pos = 0;
     std::vector<uint32_t> freq = compresskit::read_magic_and_frequency_header(
         input, pos, compresskit::ARITHMETIC_MAGIC, "arithmetic");
-    std::vector<uint32_t> cumulative = compresskit::build_cumulative(freq);
-    if (cumulative.empty()) {
-        throw std::runtime_error("arithmetic: invalid frequency table");
+    if (freq[compresskit::EOF_SYMBOL] == 0 || compresskit::frequency_total(freq) > MAX_TOTAL) {
+        throw std::runtime_error("arithmetic: corrupt frequency table");
     }
+    // finish() always emits at least one bit, so a valid stream has payload.
+    if (pos >= input.size()) {
+        throw std::runtime_error("arithmetic: truncated stream");
+    }
+    std::vector<uint32_t> cumulative = compresskit::build_cumulative(freq);
 
     std::vector<uint8_t> out;
     compresskit::BitReader reader(input.data() + pos, input.size() - pos);

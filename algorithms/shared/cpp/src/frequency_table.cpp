@@ -43,18 +43,6 @@ void scale_frequencies(std::vector<uint32_t>& freq, uint32_t max_total) {
         new_total += scaled;
     }
 
-    if (new_total == 0) {
-        // All non-zero entries collapsed to 0 above (impossible since we floor to 1).
-        uint32_t base = max_total / static_cast<uint32_t>(freq.size());
-        if (base == 0) {
-            base = 1;
-        }
-        for (uint32_t& v : freq) {
-            v = base;
-        }
-        return;
-    }
-
     // One correction sweep: distribute the excess by decrementing the largest entries.
     // O(N log N) via sort of indices by frequency; avoids the previous O(N*M) loop.
     if (new_total > max_total) {
@@ -85,11 +73,15 @@ std::vector<uint32_t> build_cumulative(const std::vector<uint32_t>& freq) {
     for (std::size_t i = 0; i < freq.size(); ++i) {
         cumulative[i + 1] = cumulative[i] + freq[i];
     }
-    if (cumulative.back() == 0) {
-        // All-zero table: signal error to caller via empty result.
-        cumulative.clear();
-    }
     return cumulative;
+}
+
+uint64_t frequency_total(const std::vector<uint32_t>& freq) {
+    uint64_t total = 0;
+    for (uint32_t v : freq) {
+        total += v;
+    }
+    return total;
 }
 
 std::vector<uint32_t> build_entropy_frequencies(const std::vector<uint8_t>& data,

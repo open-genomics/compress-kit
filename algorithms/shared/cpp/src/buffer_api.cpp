@@ -45,7 +45,7 @@ std::vector<uint8_t> read_file(const std::string& path) {
 
 Result<std::vector<uint8_t>> encode_buffer(BufferTransform transform,
                                            const std::vector<uint8_t>& input) {
-    if (input.size() > MAX_INPUT_SIZE) {
+    if (input.size() >= MAX_INPUT_SIZE) {
         return {StatusCode::ERR_SIZE_LIMIT, {}};
     }
     try {
@@ -59,7 +59,7 @@ Result<std::vector<uint8_t>> encode_buffer(BufferTransform transform,
 
 Result<std::vector<uint8_t>> decode_buffer(BufferTransform transform,
                                            const std::vector<uint8_t>& input) {
-    if (input.size() > MAX_INPUT_SIZE) {
+    if (input.size() >= MAX_INPUT_SIZE) {
         return {StatusCode::ERR_SIZE_LIMIT, {}};
     }
     try {
