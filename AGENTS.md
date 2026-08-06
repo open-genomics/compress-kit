@@ -3,7 +3,7 @@
 ## Project Identity
 
 - Product: **CompressKit** - C++17 compression laboratory
-- Repository: `AICL-Lab/compress-kit`
+- Repository: `open-genomics/compress-kit`
 - Default branch: `master`
 
 ## Core Contract

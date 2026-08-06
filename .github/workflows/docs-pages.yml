@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   deploy:
-    if: github.repository == 'AICL-Lab/compress-kit'
+    if: github.repository == 'open-genomics/compress-kit'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
