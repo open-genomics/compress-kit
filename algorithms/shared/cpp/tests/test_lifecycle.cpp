@@ -54,7 +54,7 @@ void expect_throw(const char* label, Fn fn) {
     }
 }
 
-std::vector<uint8_t> header_only(const char (&magic)[4], const std::vector<uint32_t>& freq) {
+std::vector<uint8_t> header_only(const char* magic, const std::vector<uint32_t>& freq) {
     std::vector<uint8_t> out;
     compresskit::write_frequency_header(out, magic, freq);
     return out;
@@ -88,10 +88,14 @@ void test_rejects_corrupt_input(const AlgorithmCase& algo) {
     // decoders can never reach end-of-stream.
     std::vector<uint32_t> no_eof(compresskit::SYMBOL_LIMIT, 1);
     no_eof[compresskit::EOF_SYMBOL] = 0;
-    const char (&magic)[4] = label == "Huffman"      ? compresskit::HUFFMAN_MAGIC
-                             : label == "Arithmetic" ? compresskit::ARITHMETIC_MAGIC
-                             : label == "Range"      ? compresskit::RANGE_MAGIC
-                                                     : compresskit::RLE_MAGIC;
+    const char* magic = compresskit::RLE_MAGIC;
+    if (label == "Huffman") {
+        magic = compresskit::HUFFMAN_MAGIC;
+    } else if (label == "Arithmetic") {
+        magic = compresskit::ARITHMETIC_MAGIC;
+    } else if (label == "Range") {
+        magic = compresskit::RANGE_MAGIC;
+    }
     if (label != "RLE") {
         expect_throw((label + ": frequency table without EOF").c_str(),
                      [&] { algo.decode(header_only(magic, no_eof)); });
