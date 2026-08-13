@@ -13,7 +13,7 @@
 #include "compresskit/serialization.hpp"
 
 // Huffman coding (static model, prefix codes).
-// Format: "HFMN" + frequency table (LE) + bitstream (MSB-first).
+// Format: "HFM2" + frequency table (LE) + bitstream (MSB-first).
 //
 // Performance notes:
 // - Codes stored as {uint64_t bits, uint8_t len} (8x denser than std::string).
@@ -185,6 +185,7 @@ std::vector<uint8_t> huffman_encode_buffer(const std::vector<uint8_t>& input) {
 }
 
 std::vector<uint8_t> huffman_decode_buffer(const std::vector<uint8_t>& input) {
+    compresskit::precheck_magic(input, compresskit::HUFFMAN_MAGIC, "huffman");
     std::size_t content = compresskit::verify_crc32(input, "huffman");
     const uint8_t* data = input.data();
     std::size_t pos = 0;

@@ -136,25 +136,25 @@ if (result.ok()) { use(result.value); }
 #### Huffman
 
 ```
-| HFMN | FreqCount (4B LE) | Frequencies (N×4B LE) | Bitstream | CRC-32 (4B LE) |
+| HFM2 | FreqCount (4B LE) | Frequencies (N×4B LE) | Bitstream | CRC-32 (4B LE) |
 ```
 
 #### Arithmetic
 
 ```
-| AENC | FreqCount (4B LE) | Frequencies (N×4B LE) | Bitstream | CRC-32 (4B LE) |
+| AEN2 | FreqCount (4B LE) | Frequencies (N×4B LE) | Bitstream | CRC-32 (4B LE) |
 ```
 
 #### Range Coder
 
 ```
-| RCNC | FreqCount (4B LE) | Frequencies (N×4B LE) | Bytestream | CRC-32 (4B LE) |
+| RCN2 | FreqCount (4B LE) | Frequencies (N×4B LE) | Bytestream | CRC-32 (4B LE) |
 ```
 
 #### RLE
 
 ```
-| RLE\x00 | Runs (Count × (4B LE + 1B)) | CRC-32 (4B LE) |
+| RLE2 | Runs (Count × (4B LE + 1B)) | CRC-32 (4B LE) |
 ```
 
 ### 频率表格式

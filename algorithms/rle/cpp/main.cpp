@@ -10,7 +10,7 @@
 
 // Run-Length encoding.
 // Format:
-// - Magic: 4 bytes "RLE\x00"
+// - Magic: 4 bytes "RLE2"
 // - (count: uint32 LE, value: byte) pairs until EOF; count must be > 0.
 
 namespace compresskit {
@@ -47,10 +47,11 @@ std::vector<uint8_t> rle_encode_buffer(const std::vector<uint8_t>& input) {
 }
 
 std::vector<uint8_t> rle_decode_buffer(const std::vector<uint8_t>& input) {
+    compresskit::precheck_magic(input, compresskit::RLE_MAGIC, "RLE", false);
     std::size_t content = compresskit::verify_crc32(input, "RLE");
     const uint8_t* data = input.data();
     std::size_t pos = 0;
-    compresskit::verify_magic(data, content, pos, compresskit::RLE_MAGIC, "RLE");
+    compresskit::verify_magic(data, content, pos, compresskit::RLE_MAGIC, "RLE", false);
 
     std::vector<uint8_t> out;
     while (pos < content) {

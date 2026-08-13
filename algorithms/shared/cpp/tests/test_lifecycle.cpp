@@ -183,6 +183,65 @@ int main() {
         compresskit::rle_decode_buffer(f);
     });
 
+    // v2 magic exact bytes.
+    CHECK(compresskit::HUFFMAN_MAGIC[0] == 'H');
+    CHECK(compresskit::HUFFMAN_MAGIC[3] == '2');
+    CHECK(compresskit::ARITHMETIC_MAGIC[0] == 'A');
+    CHECK(compresskit::ARITHMETIC_MAGIC[3] == '2');
+    CHECK(compresskit::RANGE_MAGIC[0] == 'R');
+    CHECK(compresskit::RANGE_MAGIC[3] == '2');
+    CHECK(compresskit::RLE_MAGIC[0] == 'R');
+    CHECK(compresskit::RLE_MAGIC[3] == '2');
+
+    // Legacy magic rejection: Huffman/Arithmetic/Range v1 archives must be
+    // rejected with "unsupported legacy format", not "checksum mismatch".
+    auto make_legacy_input = [](const char* legacy_magic) {
+        std::vector<uint8_t> out;
+        compresskit::write_magic(out, legacy_magic);
+        // Add some bytes so it's long enough to not be "too short".
+        for (int i = 0; i < 32; ++i) {
+            out.push_back(0);
+        }
+        return out;
+    };
+
+    expect_throw("Huffman: legacy HFMN rejected", [&] {
+        compresskit::huffman_decode_buffer(make_legacy_input(compresskit::HUFFMAN_LEGACY_MAGIC));
+    });
+    expect_throw("Arithmetic: legacy AENC rejected", [&] {
+        compresskit::arithmetic_decode_buffer(
+            make_legacy_input(compresskit::ARITHMETIC_LEGACY_MAGIC));
+    });
+    expect_throw("Range: legacy RCNC rejected", [&] {
+        compresskit::rangecoder_decode_buffer(make_legacy_input(compresskit::RANGE_LEGACY_MAGIC));
+    });
+
+    // Verify the error message says "legacy", not "checksum" or "bad magic".
+    try {
+        compresskit::huffman_decode_buffer(make_legacy_input(compresskit::HUFFMAN_LEGACY_MAGIC));
+        CHECK(false);
+    } catch (const std::exception& e) {
+        std::string msg = e.what();
+        CHECK(msg.find("legacy") != std::string::npos);
+        CHECK(msg.find("checksum") == std::string::npos);
+    }
+
+    // RLE v1 had no magic; any non-RLE2 input is "bad magic".
+    expect_throw("RLE: non-RLE2 rejected as bad magic", [&] {
+        std::vector<uint8_t> f = {'R', 'L', 'E', '\x00', 0, 0, 0, 0};
+        compresskit::rle_decode_buffer(f);
+    });
+
+    // Verify the RLE error says "bad magic", not "checksum".
+    try {
+        std::vector<uint8_t> f = {'R', 'L', 'E', '\x00', 0, 0, 0, 0, 1, 0, 0, 0, 'A'};
+        compresskit::rle_decode_buffer(f);
+        CHECK(false);
+    } catch (const std::exception& e) {
+        std::string msg = e.what();
+        CHECK(msg.find("bad magic") != std::string::npos);
+    }
+
     if (failures > 0) {
         std::fprintf(stderr, "test_lifecycle: %d check(s) FAILED\n", failures);
         return 1;

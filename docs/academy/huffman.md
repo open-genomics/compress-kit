@@ -152,7 +152,7 @@ CompressKit 的 Huffman 编码输出格式：
 | Magic (4 bytes) | Freq Count (4 bytes LE) | Frequencies (N × 4 bytes LE) | Bitstream |
 ```
 
-- **Magic**: `HFMN` (0x48 0x46 0x4D 0x4E)
+- **Magic**: `HFM2` (0x48 0x46 0x4D 0x4E)
 - **Freq Count**: 符号数量（N）
 - **Frequencies**: 每个符号的频率（小端序）
 - **Bitstream**: 编码后的位流

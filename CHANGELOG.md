@@ -7,6 +7,8 @@ style categories and uses semantic versioning for releases.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-13
+
 ### Changed
 
 - **BREAKING**: Project refactored to C++17-only. Go and Rust implementations removed.
@@ -22,9 +24,13 @@ style categories and uses semantic versioning for releases.
 - `build_cumulative` is now a plain prefix sum; all-zero/EOF-less tables are rejected at the entropy decode entry points instead.
 - Centralized constants (`SYMBOL_LIMIT`, `EOF_SYMBOL`, magic bytes, size limits) in `constants.hpp`.
 - Issue templates pruned of Go/Rust/OpenSpec/cross-language references; language scope reduced to C++17 / Python scripts / Docs (feature template adds CI).
-- **BREAKING (all formats)**: Every compressed stream now ends with a little-endian CRC-32 trailer (4 bytes, zlib-compatible polynomial) covering all preceding bytes. Decoders verify the checksum before any parsing, so **any** bit corruption is rejected instead of silently decoding to wrong data. Streams written by earlier revisions are not readable; magics and field layouts are otherwise unchanged (project decision: no backward-compatibility layer).
+- **BREAKING (all formats)**: Every compressed stream now ends with a little-endian CRC-32 trailer (4 bytes, zlib-compatible polynomial) covering all preceding bytes. Decoders verify the checksum before any parsing, so **any** bit corruption is rejected instead of silently decoding to wrong data. Streams written by earlier revisions are not readable (project decision: no backward-compatibility layer). See the v2 magic entry below.
 - **BREAKING (size limits)**: Unified size contract. `MAX_INPUT_SIZE` / `MAX_OUTPUT_SIZE` are replaced by `MAX_RAW_SIZE` (1 GiB: encode input must be strictly smaller; decode output may not exceed) and `MAX_COMPRESSED_SIZE` (8 GiB: decode input bound, needed because RLE expands incompressible data ~5x). Previously a file between 1 GiB and 4 GiB could be encoded but never decoded.
 - CLI smoke suite now round-trips the large corpus (`random_1MiB`, `random_10MiB`, `repetitive_10MiB`, `textlike_10MiB`) in addition to the small corpus; the large files were generated but never exercised before.
+- **BREAKING (format identity)**: All four algorithm magics changed to v2: `HFM2`, `AEN2`, `RCN2`, `RLE2`. Legacy magics (`HFMN`, `AENC`, `RCNC`) are recognised and rejected with an explicit "unsupported legacy format" error before any body parsing. v1 RLE had no magic; non-`RLE2` input is rejected as "bad magic". This ensures format generation is determined before parsing, not guessed from CRC presence.
+- **BREAKING (RLE magic)**: RLE now has a 4-byte magic (`RLE2`) for the first time. v1 RLE streams (no magic, no CRC) are not automatically recognisable and are rejected as bad magic.
+- Project version set to `2.0.0` in `CMakeLists.txt` to mark the breaking format generation boundary.
+- Decoders now classify input as v2, legacy, or unknown before parsing, preventing CRC mismatch from being reported as the primary error for legacy archives.
 
 ### Added
 
@@ -83,5 +89,6 @@ style categories and uses semantic versioning for releases.
 - Documented maximum input size of 4 GiB.
 - Documented maximum decoded output size of 1 GiB for decompression-bomb protection.
 
-[Unreleased]: https://github.com/open-genomics/compress-kit/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/open-genomics/compress-kit/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/open-genomics/compress-kit/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/open-genomics/compress-kit/releases/tag/v1.0.0

@@ -10,7 +10,7 @@
 #include "compresskit/serialization.hpp"
 
 // Arithmetic coding (32-bit state, static model).
-// Format: "AENC" + frequency table (LE) + bitstream (MSB-first).
+// Format: "AEN2" + frequency table (LE) + bitstream (MSB-first).
 
 namespace compresskit {
 namespace {
@@ -157,6 +157,7 @@ std::vector<uint8_t> arithmetic_encode_buffer(const std::vector<uint8_t>& input)
 }
 
 std::vector<uint8_t> arithmetic_decode_buffer(const std::vector<uint8_t>& input) {
+    compresskit::precheck_magic(input, compresskit::ARITHMETIC_MAGIC, "arithmetic");
     std::size_t content = compresskit::verify_crc32(input, "arithmetic");
     const uint8_t* data = input.data();
     std::size_t pos = 0;

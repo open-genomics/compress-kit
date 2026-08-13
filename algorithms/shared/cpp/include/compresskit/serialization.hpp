@@ -40,15 +40,33 @@ inline void write_frequency_header(std::vector<uint8_t>& out, const char* magic,
 
 // Verifies the leading magic prefix. On success, advances `pos` past it.
 // Throws std::runtime_error with `<algo_name>: ...` on mismatch or truncation.
+//
+// For Huffman/Arithmetic/Range (use_legacy_check = true):
+//   - v2 magic: proceed
+//   - v1 magic (HFMN/AENC/RCNC): "unsupported legacy format"
+//   - other: "bad magic"
+//
+// For RLE (use_legacy_check = false):
+//   - v2 magic (RLE2): proceed
+//   - other: "bad magic" (v1 RLE had no magic, nothing to recognise as legacy)
 inline void verify_magic(const uint8_t* data, std::size_t size, std::size_t& pos,
-                         const char* expected_magic, const char* algo_name) {
+                         const char* expected_magic, const char* algo_name,
+                         bool use_legacy_check = true) {
     if (size < MAGIC_SIZE) {
         throw std::runtime_error(std::string(algo_name) + ": input too short");
     }
-    if (std::memcmp(data, expected_magic, MAGIC_SIZE) != 0) {
-        throw std::runtime_error(std::string(algo_name) + ": bad magic");
+    if (bytes_equal(data, expected_magic)) {
+        pos = MAGIC_SIZE;
+        return;
     }
-    pos = MAGIC_SIZE;
+    if (use_legacy_check) {
+        // Check if it's a recognizable v1 magic (any of the three legacy magics).
+        if (bytes_equal(data, HUFFMAN_LEGACY_MAGIC) || bytes_equal(data, ARITHMETIC_LEGACY_MAGIC) ||
+            bytes_equal(data, RANGE_LEGACY_MAGIC)) {
+            throw std::runtime_error(std::string(algo_name) + ": unsupported legacy format");
+        }
+    }
+    throw std::runtime_error(std::string(algo_name) + ": bad magic");
 }
 
 // Reads a frequency table following the magic prefix.
@@ -86,9 +104,30 @@ inline std::vector<uint32_t> read_frequency_header(const uint8_t* data, std::siz
 inline std::vector<uint32_t> read_magic_and_frequency_header(const uint8_t* data, std::size_t size,
                                                              std::size_t& pos,
                                                              const char* expected_magic,
-                                                             const char* algo_name) {
-    verify_magic(data, size, pos, expected_magic, algo_name);
+                                                             const char* algo_name,
+                                                             bool use_legacy_check = true) {
+    verify_magic(data, size, pos, expected_magic, algo_name, use_legacy_check);
     return read_frequency_header(data, size, pos, algo_name);
+}
+
+// Pre-checks the leading magic before CRC verification, so that legacy
+// formats are classified correctly instead of being reported as checksum
+// errors.  Throws "unsupported legacy format" for recognizable v1 magic,
+// "bad magic" for unknown magic, or returns silently for v2 magic.
+inline void precheck_magic(const std::vector<uint8_t>& input, const char* expected_v2_magic,
+                           const char* algo_name, bool use_legacy_check = true) {
+    if (input.size() < MAGIC_SIZE) {
+        return;  // Let verify_crc32/verify_magic handle short input
+    }
+    if (bytes_equal(input.data(), expected_v2_magic)) {
+        return;  // v2 magic — proceed to CRC and body
+    }
+    if (use_legacy_check && (bytes_equal(input.data(), HUFFMAN_LEGACY_MAGIC) ||
+                             bytes_equal(input.data(), ARITHMETIC_LEGACY_MAGIC) ||
+                             bytes_equal(input.data(), RANGE_LEGACY_MAGIC))) {
+        throw std::runtime_error(std::string(algo_name) + ": unsupported legacy format");
+    }
+    throw std::runtime_error(std::string(algo_name) + ": bad magic");
 }
 
 }  // namespace compresskit

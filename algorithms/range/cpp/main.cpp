@@ -9,7 +9,7 @@
 #include "compresskit/serialization.hpp"
 
 // Range coder (32-bit state, byte renormalisation, carryless, static model).
-// Format: "RCNC" + frequency table (LE) + range-coded byte stream.
+// Format: "RCN2" + frequency table (LE) + range-coded byte stream.
 //
 // The coder tracks the half-open interval [low, low + range). Renormalisation
 // keeps range >= RENORM_THRESHOLD (== MAX_TOTAL) so `range / total` never
@@ -146,6 +146,7 @@ std::vector<uint8_t> rangecoder_encode_buffer(const std::vector<uint8_t>& input)
 }
 
 std::vector<uint8_t> rangecoder_decode_buffer(const std::vector<uint8_t>& input) {
+    compresskit::precheck_magic(input, compresskit::RANGE_MAGIC, "range");
     std::size_t content = compresskit::verify_crc32(input, "range");
     const uint8_t* data = input.data();
     std::size_t pos = 0;
