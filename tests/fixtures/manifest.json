@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "generator": "tests/fixtures/generate.py",
+  "format_generation": "2.0.0",
+  "cases": [
+    {
+      "id": "v2-huffman-empty",
+      "algorithm": "huffman",
+      "format": "v2",
+      "input": "inputs/empty.bin",
+      "archive": "v2/huffman/empty.dat",
+      "expect": "decode",
+      "input_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive_sha256": "9e65f2b0971a4e9ac14aaecc6978c53275936d17fec328d47e846b344f4a3807"
+    },
+    {
+      "id": "v2-arithmetic-empty",
+      "algorithm": "arithmetic",
+      "format": "v2",
+      "input": "inputs/empty.bin",
+      "archive": "v2/arithmetic/empty.dat",
+      "expect": "decode",
+      "input_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive_sha256": "9e3336ec45500f500c268535f4e43670d494da878c6d5882aac6c9957fce9457"
+    },
+    {
+      "id": "v2-range-empty",
+      "algorithm": "range",
+      "format": "v2",
+      "input": "inputs/empty.bin",
+      "archive": "v2/range/empty.dat",
+      "expect": "decode",
+      "input_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive_sha256": "f25f5e886e7c82a2ac29b01230633bc779b4f8b113f91c1b90e50ac66f3cf173"
+    },
+    {
+      "id": "v2-rle-empty",
+      "algorithm": "rle",
+      "format": "v2",
+      "input": "inputs/empty.bin",
+      "archive": "v2/rle/empty.dat",
+      "expect": "decode",
+      "input_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive_sha256": "c5436fe948802d969fca0dcd4ebc411c4556c0b546f70594c47e202a843fc8b1"
+    },
+    {
+      "id": "v2-huffman-byte42",
+      "algorithm": "huffman",
+      "format": "v2",
+      "input": "inputs/byte42.bin",
+      "archive": "v2/huffman/byte42.dat",
+      "expect": "decode",
+      "input_sha256": "df7e70e5021544f4834bbee64a9e3789febc4be81470df629cad6ddb03320a5c",
+      "archive_sha256": "7c12d0eabf7cec5798cf7907e278b08116f866f5d6bbe10b8b33653772b3e949"
+    },
+    {
+      "id": "v2-arithmetic-byte42",
+      "algorithm": "arithmetic",
+      "format": "v2",
+      "input": "inputs/byte42.bin",
+      "archive": "v2/arithmetic/byte42.dat",
+      "expect": "decode",
+      "input_sha256": "df7e70e5021544f4834bbee64a9e3789febc4be81470df629cad6ddb03320a5c",
+      "archive_sha256": "819ed276d3a41ef948b0aacd1f425b425cf4f77ee2ac993799c181b05d7160eb"
+    },
+    {
+      "id": "v2-range-byte42",
+      "algorithm": "range",
+      "format": "v2",
+      "input": "inputs/byte42.bin",
+      "archive": "v2/range/byte42.dat",
+      "expect": "decode",
+      "input_sha256": "df7e70e5021544f4834bbee64a9e3789febc4be81470df629cad6ddb03320a5c",
+      "archive_sha256": "7732580886a1efef0eb3545c40c410a34d76f31e8037d0ec17d6e67c6072a7c6"
+    },
+    {
+      "id": "v2-rle-byte42",
+      "algorithm": "rle",
+      "format": "v2",
+      "input": "inputs/byte42.bin",
+      "archive": "v2/rle/byte42.dat",
+      "expect": "decode",
+      "input_sha256": "df7e70e5021544f4834bbee64a9e3789febc4be81470df629cad6ddb03320a5c",
+      "archive_sha256": "f42fabc9cd974fabc5eaebc87b82d6cdbbcd40be1bd67c0674b4f6b15e464efb"
+    },
+    {
+      "id": "v2-huffman-ascii",
+      "algorithm": "huffman",
+      "format": "v2",
+      "input": "inputs/ascii.bin",
+      "archive": "v2/huffman/ascii.dat",
+      "expect": "decode",
+      "input_sha256": "df1505ecd40974ec43f784df50f1e445becd9568ce68193d74238c7b52aba1c5",
+      "archive_sha256": "3db40943f765406823893c90caf69ec647f8a25611ba64255427b612c4d03ea5"
+    },
+    {
+      "id": "v2-arithmetic-ascii",
+      "algorithm": "arithmetic",
+      "format": "v2",
+      "input": "inputs/ascii.bin",
+      "archive": "v2/arithmetic/ascii.dat",
+      "expect": "decode",
+      "input_sha256": "df1505ecd40974ec43f784df50f1e445becd9568ce68193d74238c7b52aba1c5",
+      "archive_sha256": "13eb01fa43474f0c12b9032d325f6f0dfb27e9d2c2b701500275940814e53c12"
+    },
+    {
+      "id": "v2-range-ascii",
+      "algorithm": "range",
+      "format": "v2",
+      "input": "inputs/ascii.bin",
+      "archive": "v2/range/ascii.dat",
+      "expect": "decode",
+      "input_sha256": "df1505ecd40974ec43f784df50f1e445becd9568ce68193d74238c7b52aba1c5",
+      "archive_sha256": "88f5b89247da2d0aeaa70fc0b6333aea7e6c64f4970f08e074f492b6e73b7bef"
+    },
+    {
+      "id": "v2-rle-ascii",
+      "algorithm": "rle",
+      "format": "v2",
+      "input": "inputs/ascii.bin",
+      "archive": "v2/rle/ascii.dat",
+      "expect": "decode",
+      "input_sha256": "df1505ecd40974ec43f784df50f1e445becd9568ce68193d74238c7b52aba1c5",
+      "archive_sha256": "a07672b696a3db9e634e4d1a0d18e50694537b3bc3bbe3e91cc97921b982d450"
+    },
+    {
+      "id": "v1-huffman",
+      "algorithm": "huffman",
+      "format": "v1",
+      "archive": "v1/huffman.dat",
+      "expect": "reject-legacy",
+      "archive_sha256": "ee6059a7a64d920f03344f07d3ef4e54d898163379d5d0465edb4f2710824695"
+    },
+    {
+      "id": "v1-arithmetic",
+      "algorithm": "arithmetic",
+      "format": "v1",
+      "archive": "v1/arithmetic.dat",
+      "expect": "reject-legacy",
+      "archive_sha256": "b063f4b27506a8eff3e733c81dfd6a097ba3445676753150a17d276743ed5193"
+    },
+    {
+      "id": "v1-range",
+      "algorithm": "range",
+      "format": "v1",
+      "archive": "v1/range.dat",
+      "expect": "reject-legacy",
+      "archive_sha256": "c4aaccd5201bc1b1dd31177344f91bdcff6f20dc160655f4398069f6fc60eb20"
+    },
+    {
+      "id": "v1-rle",
+      "algorithm": "rle",
+      "format": "v1",
+      "archive": "v1/rle.dat",
+      "expect": "reject-magic",
+      "archive_sha256": "17c30258c2f103ea8faeb17d48769a09372d2643bd778df7243f6bc079935fac"
+    }
+  ]
+}

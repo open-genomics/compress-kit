@@ -94,17 +94,6 @@ void encode(const vector<uint8_t>& data,
 
 ## 延伸阅读
 
-- [Arithmetic](/algorithms/arithmetic) — 浮点数等价实现
-- [基准测试](/benchmarks/results) — 性能对比
-
-## 已知限制
-
-::: warning 大文件性能问题
-
-当前 Range Coder 实现存在一个**已知的解码性能问题**：当文件大于 **500 KiB** 时，解码操作可能会变得非常缓慢或出现卡顿。
-
-**临时解决方案**：测试时请使用小于 100 KiB 的文件。CI 管道中已使用 100 KiB 测试文件进行 Range Coder 验证。
-
-**状态**：这是一个已知问题，已记录以便未来改进。编码操作对所有文件大小均正常工作。
-
-:::
+- [Arithmetic](/algorithms/arithmetic) — 同一熵编码思想的位级实现
+- [区间编码学院](/academy/range) — 精度下限与 v2 修复
+- [基准测试](/benchmarks/results) — `make bench` 在 10 MiB 语料上的快照

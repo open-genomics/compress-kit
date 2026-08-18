@@ -183,6 +183,11 @@ int main() {
         compresskit::rle_decode_buffer(f);
     });
 
+    // Size contract: keep the documented 1 GiB / 8 GiB bounds without allocating them.
+    CHECK(compresskit::MAX_RAW_SIZE == 1ULL * 1024 * 1024 * 1024);
+    CHECK(compresskit::MAX_COMPRESSED_SIZE == 8ULL * 1024 * 1024 * 1024);
+    CHECK(compresskit::MAX_RAW_SIZE < compresskit::MAX_COMPRESSED_SIZE);
+
     // v2 magic exact bytes.
     CHECK(compresskit::HUFFMAN_MAGIC[0] == 'H');
     CHECK(compresskit::HUFFMAN_MAGIC[3] == '2');

@@ -38,3 +38,20 @@ jobs:
 
       - name: Run repository baseline
         run: make test
+
+  sanitize:
+    name: ASan and UBSan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install CMake
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+
+      - name: Sanitize lifecycle tests
+        run: make sanitize

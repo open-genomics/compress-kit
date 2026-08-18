@@ -74,19 +74,22 @@ cmake -S . -B build && cmake --build build
 make test
 ```
 
-这将运行共享生命周期测试以及各算法特定测试套件。
+这将运行共享生命周期测试、CLI smoke、冻结格式 fixture 以及熵诊断单测。
 
 ## Makefile 命令参考
 
 | 命令 | 描述 |
 |------|------|
 | `make build` | 构建所有算法实现（封装 CMake） |
-| `make test` | 运行单元测试、生命周期测试与 CLI smoke 测试 |
+| `make test` | 运行单元测试、CLI smoke、冻结 fixture 与熵诊断单测 |
 | `make test-cli-smoke` | 运行 CLI smoke 一致性测试 |
+| `make sanitize` | ASan/UBSan 构建并运行生命周期测试 |
+| `make bench` | 刷新文档站基准快照 |
+| `make stats` | 打印类文本语料的熵与各算法压缩比特/字节 |
 | `make test-data` | 生成测试语料到 `tests/data/` |
 | `make format` | 用 clang-format 格式化所有 C++ 代码 |
 | `make lint` | clang-format dry-run 检查 |
-| `make clean` | 删除 `build/` 与 `tests/data/` |
+| `make clean` | 删除 `build/`、`build-san/` 与 `tests/data/` |
 | `make help` | 列出所有可用目标 |
 
 ## 故障排除
@@ -101,20 +104,9 @@ g++ --version  # 应为 9+
 clang++ -std=c++17 -O2 main.cpp -o huffman_cpp
 ```
 
-### Range Coder 性能
+### Range Coder 很大的文件
 
-Range Coder 解码器对大于 500 KiB 的文件存在已知性能问题，因此基准测试
-会为 Range 结果使用较小的 `small_dictionary_like` 数据集。手动检查时也请
-保持在类似的小样本范围内：
-
-```bash
-# 创建较小的测试文件 (100 KiB)
-dd if=tests/data/random_10MiB.bin of=small.bin bs=1024 count=100
-
-# 使用较小文件测试
-./build/rangecoder_cpp encode small.bin small.enc
-./build/rangecoder_cpp decode small.enc small.dec
-```
+当前实现对 10 MiB 语料可以 round-trip。若要看吞吐，用 `make bench`，不要再截成 100 KiB 代替 Range 的正式结果。
 
 ## 下一步
 

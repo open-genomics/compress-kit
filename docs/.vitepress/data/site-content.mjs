@@ -96,7 +96,7 @@ export const benchmarkCatalog = {
   datasets: [
     { id: 'textlike_10MiB', label: { zh: '类文本 (10 MiB)' } },
     { id: 'repetitive_10MiB', label: { zh: '重复数据 (10 MiB)' } },
-    { id: 'small_dictionary_like', label: { zh: '小型词典型样本' } },
+    { id: 'random_1MiB', label: { zh: '随机 (1 MiB)' } },
   ],
   metrics: [
     { id: 'encodeSpeed', label: { zh: '编码速度 (MiB/s)' } },
@@ -183,6 +183,9 @@ const sidebarCatalog = [
     items: [
       { text: { zh: '算法学院' }, link: '/academy/' },
       { text: { zh: '霍夫曼编码深度解析' }, link: '/academy/huffman' },
+      { text: { zh: '算术编码深度解析' }, link: '/academy/arithmetic' },
+      { text: { zh: '区间编码深度解析' }, link: '/academy/range' },
+      { text: { zh: '行程编码深度解析' }, link: '/academy/rle' },
     ],
   },
   {

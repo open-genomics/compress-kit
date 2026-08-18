@@ -12,7 +12,7 @@ description: 深入理解压缩算法的原理与实现
 - **理论深度**：理解每种算法的数学基础和信息论原理
 - **实现洞察**：掌握二进制格式兼容的关键设计决策
 - **性能智慧**：学会根据数据特征选择最优算法
-- **工程实践**：从状态机到错误处理的生产级设计
+- **工程实践**：体积上限、CRC-32 与损坏输入拒绝
 
 ## 四大算法概览
 
@@ -34,7 +34,7 @@ description: 深入理解压缩算法的原理与实现
       将整个消息编码为 [0,1) 区间内的单个数值，逼近熵极限。
     </div>
     <div class="feature-tags">
-      <a href="../algorithms/arithmetic" class="feature-tag">深入学习</a>
+      <a href="./arithmetic" class="feature-tag">深入学习</a>
       <span class="feature-tag">L ≈ H + ε</span>
     </div>
   </div>
@@ -45,7 +45,7 @@ description: 深入理解压缩算法的原理与实现
       基于整数区间的算术编码变体，避免浮点精度问题。
     </div>
     <div class="feature-tags">
-      <a href="../algorithms/range" class="feature-tag">深入学习</a>
+      <a href="./range" class="feature-tag">深入学习</a>
       <span class="feature-tag">字节级 I/O</span>
     </div>
   </div>
@@ -56,7 +56,7 @@ description: 深入理解压缩算法的原理与实现
       最简单的压缩方法，对连续重复数据极其高效。
     </div>
     <div class="feature-tags">
-      <a href="../algorithms/rle" class="feature-tag">深入学习</a>
+      <a href="./rle" class="feature-tag">深入学习</a>
       <span class="feature-tag">O(n) 时间</span>
     </div>
   </div>
@@ -66,13 +66,13 @@ description: 深入理解压缩算法的原理与实现
 
 ### 初级：理解基础
 
-1. [霍夫曼编码](/algorithms/huffman) - 从贪心算法到最优前缀码
-2. [行程编码](/algorithms/rle) - 最简单但实用的压缩方法
+1. [霍夫曼编码](/academy/huffman) - 从贪心算法到最优前缀码
+2. [行程编码](/academy/rle) - 最简单但实用的压缩方法
 
 ### 中级：掌握原理
 
-3. [算术编码](/algorithms/arithmetic) - 区间划分与精度处理
-4. [区间编码](/algorithms/range) - 整数实现的工程智慧
+3. [算术编码](/academy/arithmetic) - 区间划分与精度处理
+4. [区间编码](/academy/range) - 整数实现的工程智慧
 
 ### 高级：系统设计
 
@@ -121,4 +121,4 @@ $$
 
 ## 下一步
 
-选择一个算法开始深入学习，或者直接查看 [快速开始指南](/guide/getting-started)。
+选择一个算法开始深入学习，用 `make stats` 对照熵与实际码长，或查看 [快速开始指南](/guide/getting-started)。

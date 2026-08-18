@@ -64,60 +64,48 @@ $$
 
 ### 树构建算法
 
+实现把节点放在 `vector` arena 里，用下标当左右孩子，而不是 `new` 指针。频率相同时按符号值排序，保证同一输入得到同一棵树。
+
 ```cpp
 struct Node {
-    uint8_t symbol;
-    uint32_t freq;
-    Node* left = nullptr;
-    Node* right = nullptr;
+    uint32_t symbol = 0;
+    uint64_t freq = 0;
+    int32_t left = -1;   // -1 = 无孩子
+    int32_t right = -1;
 };
 
-struct Compare {
-    bool operator()(Node* a, Node* b) {
-        if (a->freq == b->freq) return a->symbol > b->symbol;
-        return a->freq > b->freq;
+int32_t build_tree(const std::vector<uint32_t>& freq, std::vector<Node>& nodes) {
+    std::priority_queue<HeapItem, std::vector<HeapItem>, HeapCmp> pq;
+    for (uint32_t s = 0; s < SYMBOL_LIMIT; ++s) {
+        if (freq[s] == 0) continue;
+        int32_t idx = static_cast<int32_t>(nodes.size());
+        nodes.push_back({s, freq[s], -1, -1});
+        pq.push({freq[s], s, idx});
     }
-};
-
-Node* buildHuffmanTree(const std::vector<uint32_t>& freqs) {
-    // 使用最小堆（priority_queue 默认是最大堆，用 > 实现最小堆）
-    std::priority_queue<Node*, std::vector<Node*>, Compare> pq;
-    for (int sym = 0; sym < 256; ++sym) {
-        if (freqs[sym] > 0) {
-            pq.push(new Node{static_cast<uint8_t>(sym), freqs[sym]});
-        }
-    }
-
-    // 合并直到只剩一个节点
     while (pq.size() > 1) {
-        Node* left = pq.top(); pq.pop();
-        Node* right = pq.top(); pq.pop();
-        Node* parent = new Node{0, left->freq + right->freq, left, right};
-        pq.push(parent);
+        HeapItem a = pq.top(); pq.pop();
+        HeapItem b = pq.top(); pq.pop();
+        int32_t parent = static_cast<int32_t>(nodes.size());
+        nodes.push_back({std::min(a.symbol, b.symbol), a.freq + b.freq,
+                         a.index, b.index});
+        pq.push({a.freq + b.freq, std::min(a.symbol, b.symbol), parent});
     }
-
-    return pq.top();
+    return pq.top().index;
 }
 ```
 
 ### 码表生成
 
 ```cpp
-void generateCodes(Node* root, const std::string& code,
-                   std::array<std::string, 256>& codes) {
-    if (root == nullptr) {
+void generateCodes(const std::vector<Node>& nodes, int32_t idx,
+                   Code* codes, uint64_t bits, uint8_t len) {
+    if (idx < 0) return;
+    if (nodes[idx].left < 0 && nodes[idx].right < 0) {
+        codes[nodes[idx].symbol] = {bits, len == 0 ? uint8_t{1} : len};
         return;
     }
-
-    if (root->left == nullptr && root->right == nullptr) {
-        // 叶节点：保存编码
-        codes[root->symbol] = code;
-        return;
-    }
-
-    // 递归生成左右子树编码
-    generateCodes(root->left, code + "0", codes);
-    generateCodes(root->right, code + "1", codes);
+    generateCodes(nodes, nodes[idx].left, codes, bits << 1, len + 1);
+    generateCodes(nodes, nodes[idx].right, codes, (bits << 1) | 1, len + 1);
 }
 ```
 
@@ -135,11 +123,10 @@ void generateCodes(Node* root, const std::string& code,
 为确保确定性二进制输出，频率相同时按符号值排序：
 
 ```cpp
-// 比较函数：频率相同时按符号值排序，保证确定性输出
-struct Compare {
-    bool operator()(Node* a, Node* b) {
-        if (a->freq == b->freq) return a->symbol > b->symbol;
-        return a->freq > b->freq;
+struct HeapCmp {
+    bool operator()(const HeapItem& a, const HeapItem& b) const {
+        if (a.freq != b.freq) return a.freq > b.freq;
+        return a.symbol > b.symbol;
     }
 };
 ```

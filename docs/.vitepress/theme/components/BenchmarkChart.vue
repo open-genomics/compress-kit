@@ -21,7 +21,7 @@ const content = computed(() => getBenchmarkContent('zh'))
 
 const algorithms = computed(() => content.value.algorithms.map(entry => entry.id))
 const languages = computed(() => content.value.languages.map(entry => entry.id))
-const datasetOrder = ['textlike_10MiB', 'repetitive_10MiB', 'small_dictionary_like']
+const datasetOrder = ['textlike_10MiB', 'repetitive_10MiB', 'random_1MiB']
 const languageColors = computed(() =>
   Object.fromEntries(content.value.languages.map(entry => [entry.id, entry.color]))
 )

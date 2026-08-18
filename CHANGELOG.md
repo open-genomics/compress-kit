@@ -7,6 +7,18 @@ style categories and uses semantic versioning for releases.
 
 ## [Unreleased]
 
+### Added
+
+- Frozen v1-rejection and v2-decode fixtures with SHA-256 manifests, run by `make test`.
+- `make sanitize` (ASan/UBSan) and a matching CI job.
+- `make bench` refreshes the docs benchmark snapshot on shared 10 MiB / 1 MiB corpora.
+- `make stats` prints Shannon entropy versus each algorithm's bits/byte.
+- Academy pages for Arithmetic, Range Coder, and RLE.
+
+### Changed
+
+- Benchmark charts no longer substitute an 8 KiB sample for Range Coder.
+
 ## [2.0.0] - 2026-08-18
 
 ### Changed

@@ -5,29 +5,32 @@ Huffman 是一种无损数据压缩算法，使用**变长编码**来表示符�
 ## 工作原理
 
 ```cpp
-void buildHuffmanTree(const vector<uint32_t>& freq) {
-    priority_queue<Node*, vector<Node*>, Compare> pq;
-    
-    // 创建叶子节点
-    for (int i = 0; i < 256; i++) {
+struct Node {
+    uint32_t symbol = 0;
+    uint64_t freq = 0;
+    int32_t left = -1;
+    int32_t right = -1;
+};
+
+int32_t buildHuffmanTree(const vector<uint32_t>& freq, vector<Node>& nodes) {
+    priority_queue<HeapItem, vector<HeapItem>, HeapCmp> pq;
+    for (uint32_t i = 0; i < 256; i++) {
         if (freq[i] > 0) {
-            pq.push(new Node(i, freq[i]));
+            int32_t idx = static_cast<int32_t>(nodes.size());
+            nodes.push_back({i, freq[i], -1, -1});
+            pq.push({freq[i], i, idx});
         }
     }
-    
-    // 通过合并最低频率节点构建树
     while (pq.size() > 1) {
-        Node* left = pq.top(); pq.pop();
-        Node* right = pq.top(); pq.pop();
-        
-        Node* parent = new Node(0, left->freq + right->freq);
-        parent->left = left;
-        parent->right = right;
-        
-        pq.push(parent);
+        HeapItem left = pq.top(); pq.pop();
+        HeapItem right = pq.top(); pq.pop();
+        int32_t parent = static_cast<int32_t>(nodes.size());
+        nodes.push_back({min(left.symbol, right.symbol),
+                         left.freq + right.freq, left.index, right.index});
+        pq.push({left.freq + right.freq,
+                 min(left.symbol, right.symbol), parent});
     }
-    
-    root = pq.top();
+    return pq.top().index;
 }
 ```
 

@@ -1,99 +1,47 @@
 # 如何运行基准测试
 
-本仓库的基准数据通过仓库内的 Python 脚本与 CLI 二进制生成，文档站读取
-`docs/.vitepress/data/benchmarks.json` 这一快照展示交互式图表。
+基准快照位于 `docs/.vitepress/data/benchmarks.json`，文档站图表直接读取该文件。
 
-## 前置条件
+## 一键重跑
 
-- Python 3.8+
-- 所有实现已构建：`make build`
-- 测试数据已生成：`make test-data`
+```bash
+make bench
+```
 
-## 仓库现状
+这会构建 CLI、生成语料，对每个算法 × 数据集做 encode/decode 计时，并覆盖 JSON 快照。随后：
 
-当前仓库**未内置一键基准脚本**（无 `make bench` 目标，亦无
-`scripts/run_all_bench.py` 与 `algorithms/<algo>/benchmark/bench.py`）。
-基准快照 `docs/.vitepress/data/benchmarks.json` 由维护者手工生成并提交。
+```bash
+cd docs && npm ci && npm test && npm run build
+```
 
-## 手动复现基准
+## 当前数据集
 
-如需本地复现，可参照以下流程：
+| 文件 | 用途 |
+|------|------|
+| `textlike_10MiB.bin` | 四算法主对比 |
+| `repetitive_10MiB.bin` | RLE 有意义的高重复输入；其他算法仍跑，便于对照 |
+| `random_1MiB.bin` | 近不可压缩输入（RLE 会膨胀） |
 
-1. 构建所有算法二进制：
-
-   ```bash
-   make build
-   ```
-
-2. 生成测试语料：
-
-   ```bash
-   make test-data
-   ```
-
-3. 对每个算法 × 数据集组合手工运行编码与解码，记录挂钟时间、输出大小：
-
-   ```bash
-   ./build/huffman_cpp encode tests/data/textlike_10MiB.bin out.huf
-   ./build/huffman_cpp decode out.huf restored.bin
-   # 同理运行 arithmetic_cpp / rangecoder_cpp / rle_cpp
-   ```
-
-4. 汇总结果写入 `docs/.vitepress/data/benchmarks.json`（字段含义见
-   [基准测试结果](/benchmarks/results)），随后运行 `cd docs && npm run build`
-   验证文档图表可正确渲染。
-
-## 测试数据
-
-`make test-data` 调用 `tests/gen_testdata.py`，在 `tests/data/` 下生成：
-
-| 文件 | 生成方式 | 大小 |
-|------|----------|------|
-| `random_1MiB.bin` | `os.urandom(1024*1024)` | 1 MiB |
-| `random_10MiB.bin` | `os.urandom(10*1024*1024)` | 10 MiB |
-| `repetitive_10MiB.bin` | 随机字节值 + 随机 run 长度 [4, 4096] | 10 MiB |
-| `textlike_10MiB.bin` | 加权英文字母 | 10 MiB |
-| `small_dictionary_like.bin` | 小型重复词典风格样本 | 约 8 KiB |
+四个算法都在同一文件上计时。Range Coder 已能 round-trip 10 MiB；不要再用 8 KiB 样本代替它。
 
 ## 测量指标
 
 | 指标 | 描述 |
 |------|------|
-| 编码时间 | 压缩输入的挂钟时间 |
-| 解码时间 | 恢复原始的挂钟时间 |
-| 编码速度 | MiB/s = 输入大小 / 编码时间 |
-| 解码速度 | MiB/s = 输入大小 / 解码时间 |
+| 编码时间 | 压缩输入的挂钟时间（毫秒） |
+| 解码时间 | 恢复原始的挂钟时间（毫秒） |
+| 编码/解码速度 | MiB/s = 输入大小 / 时间 |
 | 压缩比 | 输出大小 / 输入大小（越小越好） |
 
-## Range Coder 注意事项
+## 熵对照
 
-Range Coder 解码器对大于 **500 KiB** 的输入存在已知性能问题。基准快照
-中 Range 结果使用 `small_dictionary_like` 数据集，手工复现时请同样保持
-在小样本范围内（建议 < 100 KiB）。
+```bash
+make stats
+python3 tests/lab_stats.py tests/data/repetitive_10MiB.bin
+```
+
+输出输入的 Shannon 熵（比特/字节）以及每种算法压缩后的实际比特/字节。
 
 ## 故障排除
 
-### "Binary not found"
-
-```bash
-make build  # 重新构建所有实现
-```
-
-### "Test data not found"
-
-```bash
-make test-data  # 生成测试文件
-```
-
-
-### Range Coder 基准测试很慢
-
-::: warning
-Range Coder 解码器对大于 500 KiB 的文件存在已知性能问题。因此仓库内置的
-基准流程会为 Range 结果使用 `small_dictionary_like.bin`。
-:::
-
-```bash
-# 创建较小的测试文件
-dd if=tests/data/random_10MiB.bin of=small.bin bs=1024 count=100
-```
+二进制或语料缺失时，先运行 `make build` 与 `make test-data`。

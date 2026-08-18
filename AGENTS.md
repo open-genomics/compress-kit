@@ -29,8 +29,9 @@ rejected as bad magic.
 | Command | Purpose |
 |---------|---------|
 | `make build` | Build all C++ CLIs (CMake) |
-| `make test` | Unit tests + CLI smoke tests |
+| `make test` | Unit tests + CLI smoke + frozen fixtures |
 | `make lint` | clang-format dry-run |
+| `make sanitize` | ASan/UBSan lifecycle tests |
 
 ## Key Constraints
 

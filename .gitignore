@@ -7,6 +7,9 @@
 tests/data/*.bin
 tests/.conformance-*/
 
+# Sanitizer build tree
+build-san/
+
 # Encoded output files
 **/*.enc
 **/*.out

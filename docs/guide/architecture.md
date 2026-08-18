@@ -21,7 +21,7 @@ CompressKit 在算法核心之上仅保留一层薄 buffer 层：
 
 ## 验证
 
-`make test` 先运行共享生命周期测试，再运行算法特定套件。
+`make test` 运行生命周期测试、CLI smoke、冻结格式 fixture 与熵诊断单测。
 
 ## 延伸阅读
 
