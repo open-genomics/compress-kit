@@ -45,6 +45,7 @@ cmake -S . -B build && cmake --build build
 | 4 | 4B | 频率表大小（始终 257） |
 | 8 | 1028B | 频率表（257 × uint32 LE） |
 | 1036+ | 可变 | 编码比特流 |
+| 末尾 | 4B | CRC-32（小端，覆盖此前全部字节） |
 
 ---
 
@@ -81,6 +82,7 @@ cmake -S . -B build && cmake --build build
 | 4 | 4B | 频率表大小 |
 | 8 | 可变 | 频率表 |
 | ... | 可变 | 字节流（重归一化区间） |
+| 末尾 | 4B | CRC-32（小端，覆盖此前全部字节） |
 
 ---
 
@@ -93,7 +95,7 @@ cmake -S . -B build && cmake --build build
 
 ### 文件格式
 
-重复的 `(count: uint32 LE, value: byte)` 对。
+`RLE2` 魔数，随后重复的 `(count: uint32 LE, value: byte)` 对，末尾 4 字节 CRC-32。
 
 ---
 

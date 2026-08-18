@@ -91,7 +91,7 @@ if (result.ok()) { use(result.value); }
 
 **特点**：
 - 每次调用独立
-- 自动体积上限检查（输入严格小于 4 GiB，解码输出至多 1 GiB）
+- 自动体积上限检查（原始数据严格小于 1 GiB；压缩解码输入严格小于 8 GiB）
 - 统一 `Result<T>`，三种状态码
 
 ### 3. Algorithm Core（算法核心）
@@ -117,6 +117,7 @@ if (result.ok()) { use(result.value); }
 | `bit_io.hpp` | `BitWriter` / `BitReader` |
 | `frequency_table.hpp` | 频率表读写 |
 | `serialization.hpp` | 共享魔数/头序列化 |
+| `checksum.hpp` | CRC-32 尾校验 |
 | `cli_launcher.hpp` | 统一 CLI 分发 |
 | `constants.hpp` | 共享命名常量 |
 

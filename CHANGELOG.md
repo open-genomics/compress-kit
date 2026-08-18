@@ -7,7 +7,7 @@ style categories and uses semantic versioning for releases.
 
 ## [Unreleased]
 
-## [2.0.0] - 2026-08-13
+## [2.0.0] - 2026-08-18
 
 ### Changed
 
@@ -61,6 +61,8 @@ style categories and uses semantic versioning for releases.
 - `test_lifecycle` relied on `assert()`, which `-DNDEBUG` compiles out in the default Release build - the suite passed without checking anything. Checks are now always active, and corrupt-input rejection cases were added.
 - RLE encode was missing the input-size check the other three encoders enforce.
 - Removed dead branches in `scale_frequencies` (unreachable `new_total == 0` fallback) and the now-unreachable single-leaf early return in the Huffman decoder.
+- Huffman and Range docs listed v2 magic ASCII with v1 trailing bytes (`0x4E` / `0x43`); they now match `HFM2` / `RCN2`.
+- Architecture buffer-layer size-limit text still documented the old 4 GiB encode cap; it now matches the 1 GiB raw / 8 GiB compressed contract.
 
 ### Clean Code: shared utilities & named constants
 

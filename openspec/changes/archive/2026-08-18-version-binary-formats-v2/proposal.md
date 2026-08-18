@@ -2,7 +2,7 @@
 
 ## Metadata
 
-- Status: `Applying`
+- Status: `Archived`
 - Repository: `open-genomics/compress-kit`
 - Audit base: `aa6472604fe25e567fa4fe56f31c3baf2b3577a6`
 - Capability: `binary-formats`

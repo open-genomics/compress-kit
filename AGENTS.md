@@ -11,16 +11,18 @@
 Four algorithms (Huffman, Arithmetic, Range, RLE) implemented in C++17.
 Binary format compatibility is the primary constraint.
 
-**Magic Numbers**:
+**Magic Numbers** (v2):
 | Algorithm | Magic |
 |-----------|-------|
-| Huffman | `HFMN` |
-| Arithmetic | `AENC` |
-| Range Coder | `RCNC` |
-| RLE | `RLE\x00` |
+| Huffman | `HFM2` |
+| Arithmetic | `AEN2` |
+| Range Coder | `RCN2` |
+| RLE | `RLE2` |
 
 Every stream ends with a little-endian CRC-32 trailer (4 bytes) covering all
-preceding bytes; decoders verify it before parsing.
+preceding bytes; decoders verify it before parsing. Legacy magics (`HFMN`,
+`AENC`, `RCNC`) are rejected as unsupported; v1 RLE had no magic and is
+rejected as bad magic.
 
 ## Validation Commands
 

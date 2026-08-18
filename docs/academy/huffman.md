@@ -149,13 +149,14 @@ struct Compare {
 CompressKit 的 Huffman 编码输出格式：
 
 ```
-| Magic (4 bytes) | Freq Count (4 bytes LE) | Frequencies (N × 4 bytes LE) | Bitstream |
+| Magic (4 bytes) | Freq Count (4 bytes LE) | Frequencies (N × 4 bytes LE) | Bitstream | CRC-32 (4 bytes LE) |
 ```
 
-- **Magic**: `HFM2` (0x48 0x46 0x4D 0x4E)
+- **Magic**: `HFM2` (0x48 0x46 0x4D 0x32)
 - **Freq Count**: 符号数量（N）
 - **Frequencies**: 每个符号的频率（小端序）
 - **Bitstream**: 编码后的位流
+- **CRC-32**: 小端 4 字节，覆盖此前全部字节；解码前强制校验
 
 ## 性能分析
 
