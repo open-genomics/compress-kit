@@ -22,6 +22,14 @@ public:
             buffer_ = 0;
         }
     }
+
+    // Writes `len` bits, most-significant bit first (same order as write_bit loops).
+    void write_bits(uint64_t bits, uint8_t len) {
+        for (uint8_t i = 0; i < len; ++i) {
+            write_bit(static_cast<int>((bits >> (len - 1 - i)) & 1));
+        }
+    }
+
     void flush() {
         if (bits_ > 0) {
             buffer_ = static_cast<uint8_t>(buffer_ << (BITS_PER_BYTE - bits_));

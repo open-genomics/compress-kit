@@ -169,15 +169,9 @@ std::vector<uint8_t> huffman_encode_buffer(const std::vector<uint8_t>& input) {
 
     compresskit::BitWriter writer;
     for (uint8_t b : input) {
-        const Code& c = codes[b];
-        for (uint8_t i = 0; i < c.len; ++i) {
-            writer.write_bit(static_cast<int>((c.bits >> (c.len - 1 - i)) & 1));
-        }
+        writer.write_bits(codes[b].bits, codes[b].len);
     }
-    const Code& eof = codes[compresskit::EOF_SYMBOL];
-    for (uint8_t i = 0; i < eof.len; ++i) {
-        writer.write_bit(static_cast<int>((eof.bits >> (eof.len - 1 - i)) & 1));
-    }
+    writer.write_bits(codes[compresskit::EOF_SYMBOL].bits, codes[compresskit::EOF_SYMBOL].len);
     std::vector<uint8_t> bits = writer.finish();
     out.insert(out.end(), bits.begin(), bits.end());
     compresskit::append_crc32(out);

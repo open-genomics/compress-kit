@@ -19,9 +19,13 @@ void scale_frequencies(std::vector<uint32_t>& freq, uint32_t max_total);
 std::vector<uint32_t> build_cumulative(const std::vector<uint32_t>& freq);
 
 // 64-bit sum of a serialized frequency table. Entropy decoders require
-// 1 <= total <= MAX_TOTAL; tables outside that range cannot come from a
+// 1 <= total <= MAX_FREQ_TOTAL; tables outside that range cannot come from a
 // valid encoder and would break the coders' division invariants.
 uint64_t frequency_total(const std::vector<uint32_t>& freq);
+
+// Binary search: first symbol with cumulative[symbol + 1] > value.
+// Never selects a zero-width interval on a corrupt table.
+uint32_t find_symbol(const std::vector<uint32_t>& cumulative, uint64_t value);
 
 // Builds the entropy-coder frequency table: byte counts + EOF marker, scaled
 // to fit `max_total`. Shared by arithmetic and range coders.

@@ -23,9 +23,9 @@
 namespace compresskit {
 namespace {
 
-constexpr uint32_t MAX_TOTAL = 1u << 24;
-constexpr uint32_t RENORM_THRESHOLD = 1u << 24;  // required minimum range
-constexpr int STATE_BYTES = 4;                   // 32-bit state, flushed byte-by-byte
+constexpr uint32_t MAX_TOTAL = compresskit::MAX_FREQ_TOTAL;
+constexpr uint32_t RENORM_THRESHOLD = compresskit::MAX_FREQ_TOTAL;
+constexpr int STATE_BYTES = 4;  // 32-bit state, flushed byte-by-byte
 constexpr int TOP_BYTE_SHIFT = (STATE_BYTES - 1) * compresskit::BITS_PER_BYTE;  // 24
 
 class RangeEncoder {
@@ -79,20 +79,7 @@ public:
         uint64_t total = cumulative.back();
         uint64_t r = range_ / total;
         uint32_t value = static_cast<uint32_t>((code_ - low_) / r);
-
-        // Binary search: first symbol with cumulative[symbol + 1] > value
-        // (O(log N)). Never selects a zero-width interval on corrupt tables.
-        uint32_t lo = 0;
-        uint32_t hi = static_cast<uint32_t>(cumulative.size() - 2);
-        while (lo < hi) {
-            uint32_t mid = lo + (hi - lo) / 2;
-            if (static_cast<uint64_t>(cumulative[mid + 1]) > value) {
-                hi = mid;
-            } else {
-                lo = mid + 1;
-            }
-        }
-        uint32_t symbol = lo;
+        uint32_t symbol = compresskit::find_symbol(cumulative, value);
         low_ += static_cast<uint32_t>(r * cumulative[symbol]);
         range_ = static_cast<uint32_t>(r * (cumulative[symbol + 1] - cumulative[symbol]));
         renorm();

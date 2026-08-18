@@ -28,20 +28,23 @@ std::vector<uint8_t> rle_encode_buffer(const std::vector<uint8_t>& input) {
         return out;
     }
 
+    auto emit_run = [&](uint32_t n, uint8_t value) {
+        compresskit::write_u32_le(out, n);
+        out.push_back(value);
+    };
+
     uint8_t current = input[0];
     uint32_t count = 1;
     for (std::size_t i = 1; i < input.size(); ++i) {
         if (input[i] == current && count < UINT32_MAX) {
             ++count;
         } else {
-            compresskit::write_u32_le(out, count);
-            out.push_back(current);
+            emit_run(count, current);
             current = input[i];
             count = 1;
         }
     }
-    compresskit::write_u32_le(out, count);
-    out.push_back(current);
+    emit_run(count, current);
     compresskit::append_crc32(out);
     return out;
 }
@@ -58,10 +61,7 @@ std::vector<uint8_t> rle_decode_buffer(const std::vector<uint8_t>& input) {
         if (pos + compresskit::RLE_PAIR_SIZE > content) {
             throw std::runtime_error("RLE: truncated count+value pair");
         }
-        uint32_t count = 0;
-        for (std::size_t b = 0; b < compresskit::U32_SIZE; ++b) {
-            count |= static_cast<uint32_t>(data[pos + b]) << (b * compresskit::BITS_PER_BYTE);
-        }
+        uint32_t count = compresskit::read_u32_le(data + pos);
         uint8_t value = data[pos + compresskit::U32_SIZE];
         pos += compresskit::RLE_PAIR_SIZE;
         if (count == 0) {

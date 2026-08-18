@@ -23,6 +23,7 @@ constexpr std::size_t MAGIC_SIZE = 4;  // algorithm magic prefix length
 constexpr std::size_t U32_SIZE = 4;    // little-endian uint32 serialisation
 constexpr int BITS_PER_BYTE = 8;
 constexpr uint32_t BYTE_VALUES = 1u << BITS_PER_BYTE;  // 256
+constexpr uint32_t MAX_FREQ_TOTAL = 1u << 24;          // entropy tables; keeps range/total >= 1
 constexpr std::size_t RLE_PAIR_SIZE = U32_SIZE + 1;    // count + value byte
 constexpr std::size_t CRC32_SIZE = 4;                  // trailing CRC-32 checksum
 

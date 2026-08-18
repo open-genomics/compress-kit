@@ -15,7 +15,7 @@
 namespace compresskit {
 namespace {
 
-constexpr uint32_t MAX_TOTAL = 1u << 24;
+constexpr uint32_t MAX_TOTAL = compresskit::MAX_FREQ_TOTAL;
 constexpr uint64_t STATE_BITS = 32;
 constexpr uint64_t FULL_RANGE = 1ull << STATE_BITS;
 constexpr uint64_t HALF_RANGE = FULL_RANGE >> 1;
@@ -86,26 +86,14 @@ public:
         uint64_t total = cumulative.back();
         uint64_t offset = code_ - low_;
         uint64_t value = ((offset + 1) * total - 1) / range;
-
-        // Binary search: first symbol with cumulative[symbol + 1] > value
-        // (O(log N)). Never selects a zero-width interval on corrupt tables.
-        uint32_t lo = 0;
-        uint32_t hi = static_cast<uint32_t>(cumulative.size() - 2);
-        while (lo < hi) {
-            uint32_t mid = lo + (hi - lo) / 2;
-            if (static_cast<uint64_t>(cumulative[mid + 1]) > value) {
-                hi = mid;
-            } else {
-                lo = mid + 1;
-            }
-        }
-        uint32_t symbol = lo;
+        uint32_t symbol = compresskit::find_symbol(cumulative, value);
         uint64_t sym_low = cumulative[symbol];
         uint64_t sym_high = cumulative[symbol + 1];
         high_ = low_ + (range * sym_high) / total - 1;
         low_ = low_ + (range * sym_low) / total;
         for (;;) {
             if (high_ < HALF_RANGE) {
+                // Already in the lower half: no additive correction.
             } else if (low_ >= HALF_RANGE) {
                 low_ -= HALF_RANGE;
                 high_ -= HALF_RANGE;

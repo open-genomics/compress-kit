@@ -26,20 +26,7 @@ def shannon_entropy_bits_per_byte(data: bytes) -> float:
 
 
 def _run(command: list[str]) -> None:
-    proc = subprocess.run(
-        command,
-        cwd=metadata.ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=TIMEOUT_SECONDS,
-        check=False,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(
-            f"command failed (exit {proc.returncode}): {' '.join(command)}\n"
-            f"{proc.stdout}{proc.stderr}"
-        )
+    metadata.run_cli_checked(command, timeout=TIMEOUT_SECONDS)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -54,9 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     if not data:
         print("empty input: entropy bound is 0; encoders still emit headers + CRC")
 
-    missing = [a.binary for a in metadata.ALGORITHMS if not a.binary.is_file()]
-    if missing:
-        raise SystemExit("missing binaries; run `make build` first:\n" + "\n".join(map(str, missing)))
+    metadata.require_binaries()
 
     with tempfile.TemporaryDirectory(prefix=".lab-stats-", dir=metadata.TESTS_DIR) as tmp:
         tmpdir = Path(tmp)

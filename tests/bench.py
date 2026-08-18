@@ -26,20 +26,7 @@ DATASETS = (
 
 
 def _run(command: list[str]) -> None:
-    proc = subprocess.run(
-        command,
-        cwd=metadata.ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=TIMEOUT_SECONDS,
-        check=False,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(
-            f"command failed (exit {proc.returncode}): {' '.join(command)}\n"
-            f"{proc.stdout}{proc.stderr}"
-        )
+    metadata.run_cli_checked(command, timeout=TIMEOUT_SECONDS)
 
 
 def throughput_label(mib_per_s: float) -> str:
@@ -65,9 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    missing_bins = [a.binary for a in metadata.ALGORITHMS if not a.binary.is_file()]
-    if missing_bins:
-        raise SystemExit("missing binaries; run `make build` first:\n" + "\n".join(map(str, missing_bins)))
+    metadata.require_binaries()
 
     results = []
     with tempfile.TemporaryDirectory(prefix=".bench-", dir=metadata.TESTS_DIR) as tmp:

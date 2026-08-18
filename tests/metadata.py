@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -62,3 +63,33 @@ def corpus_files(include_large: bool = False) -> tuple[str, ...]:
     if include_large:
         return tuple(c.name for c in CORPUS)
     return DEFAULT_CORPUS
+
+
+def require_binaries() -> None:
+    missing = [a.binary for a in ALGORITHMS if not a.binary.is_file()]
+    if missing:
+        raise SystemExit(
+            "missing binaries; run `make build` first:\n" + "\n".join(str(p) for p in missing)
+        )
+
+
+def run_cli(command: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        command,
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def run_cli_checked(command: list[str], *, timeout: float) -> None:
+    proc = run_cli(command, timeout=timeout)
+    if proc.returncode == 0:
+        return
+    raise RuntimeError(
+        f"command failed (exit {proc.returncode}): {' '.join(command)}\n"
+        f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+    )

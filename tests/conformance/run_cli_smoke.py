@@ -11,31 +11,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import metadata
 
-ROOT = metadata.ROOT
 USAGE_FRAGMENT = "encode|decode input output"
 TIMEOUT_SECONDS = 10.0
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        command,
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=TIMEOUT_SECONDS,
-        check=False,
-    )
+    return metadata.run_cli(command, timeout=TIMEOUT_SECONDS)
 
 
 def run_checked(command: list[str]) -> None:
-    proc = run(command)
-    if proc.returncode == 0:
-        return
-    raise RuntimeError(
-        f"command failed (exit {proc.returncode}): {' '.join(command)}\n"
-        f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
-    )
+    metadata.run_cli_checked(command, timeout=TIMEOUT_SECONDS)
 
 
 def assert_usage(binary: Path) -> None:
@@ -83,13 +68,10 @@ def assert_detects_corruption(binary: Path, source: Path, encoded: Path, decoded
 
 
 def main() -> int:
+    metadata.require_binaries()
     corpus = [metadata.DATA_DIR / name for name in metadata.DEFAULT_CORPUS]
     large_corpus = [metadata.DATA_DIR / name for name in metadata.LARGE_CORPUS]
 
-    missing_bins = [a.binary for a in metadata.ALGORITHMS if not a.binary.is_file()]
-    if missing_bins:
-        raise SystemExit(f"missing binaries; run `make build` first:\n"
-                         + "\n".join(str(p) for p in missing_bins))
     missing_corpus = [p for p in corpus + large_corpus if not p.is_file()]
     if missing_corpus:
         raise SystemExit(f"missing corpus; run `make test-data` first:\n"

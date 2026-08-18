@@ -15,10 +15,7 @@ std::vector<uint32_t> count_frequencies(const std::vector<uint8_t>& data) {
 }
 
 void scale_frequencies(std::vector<uint32_t>& freq, uint32_t max_total) {
-    uint64_t total = 0;
-    for (uint32_t f : freq) {
-        total += f;
-    }
+    uint64_t total = frequency_total(freq);
     if (total == 0) {
         for (uint32_t& v : freq) {
             v = 1;
@@ -82,6 +79,20 @@ uint64_t frequency_total(const std::vector<uint32_t>& freq) {
         total += v;
     }
     return total;
+}
+
+uint32_t find_symbol(const std::vector<uint32_t>& cumulative, uint64_t value) {
+    uint32_t lo = 0;
+    uint32_t hi = static_cast<uint32_t>(cumulative.size() - 2);
+    while (lo < hi) {
+        uint32_t mid = lo + (hi - lo) / 2;
+        if (static_cast<uint64_t>(cumulative[mid + 1]) > value) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return lo;
 }
 
 std::vector<uint32_t> build_entropy_frequencies(const std::vector<uint8_t>& data,

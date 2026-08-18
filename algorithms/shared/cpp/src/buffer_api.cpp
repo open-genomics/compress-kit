@@ -41,6 +41,21 @@ std::vector<uint8_t> read_file(const std::string& path) {
     return data;
 }
 
+template <typename Layer>
+bool apply_file(BufferTransform transform, const std::string& input_path,
+                const std::string& output_path, Layer layer) {
+    try {
+        std::vector<uint8_t> input = read_file(input_path);
+        Result<std::vector<uint8_t>> result = layer(transform, input);
+        if (!result.ok()) {
+            return false;
+        }
+        return write_file(output_path, result.value);
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
 }  // namespace
 
 Result<std::vector<uint8_t>> encode_buffer(BufferTransform transform,
@@ -76,30 +91,12 @@ Result<std::vector<uint8_t>> decode_buffer(BufferTransform transform,
 
 bool encode_file_via_buffer(BufferTransform transform, const std::string& input_path,
                             const std::string& output_path) {
-    try {
-        std::vector<uint8_t> input = read_file(input_path);
-        Result<std::vector<uint8_t>> encoded = encode_buffer(transform, input);
-        if (!encoded.ok()) {
-            return false;
-        }
-        return write_file(output_path, encoded.value);
-    } catch (const std::exception&) {
-        return false;
-    }
+    return apply_file(transform, input_path, output_path, encode_buffer);
 }
 
 bool decode_file_via_buffer(BufferTransform transform, const std::string& input_path,
                             const std::string& output_path) {
-    try {
-        std::vector<uint8_t> input = read_file(input_path);
-        Result<std::vector<uint8_t>> decoded = decode_buffer(transform, input);
-        if (!decoded.ok()) {
-            return false;
-        }
-        return write_file(output_path, decoded.value);
-    } catch (const std::exception&) {
-        return false;
-    }
+    return apply_file(transform, input_path, output_path, decode_buffer);
 }
 
 }  // namespace compresskit

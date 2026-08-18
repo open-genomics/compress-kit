@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -51,14 +50,9 @@ def sha256_bytes(data: bytes) -> str:
 
 
 def encode(binary: Path, source: Path, archive: Path) -> None:
-    proc = subprocess.run(
+    proc = metadata.run_cli(
         [str(binary), "encode", str(source), str(archive)],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
         timeout=TIMEOUT_SECONDS,
-        check=False,
     )
     if proc.returncode != 0:
         raise SystemExit(
@@ -68,9 +62,7 @@ def encode(binary: Path, source: Path, archive: Path) -> None:
 
 
 def main() -> int:
-    missing = [a.binary for a in metadata.ALGORITHMS if not a.binary.is_file()]
-    if missing:
-        raise SystemExit("missing binaries; run `make build` first:\n" + "\n".join(map(str, missing)))
+    metadata.require_binaries()
 
     input_dir = FIXTURE_DIR / "inputs"
     input_dir.mkdir(parents=True, exist_ok=True)

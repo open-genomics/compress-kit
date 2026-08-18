@@ -4,7 +4,6 @@
 // algorithm implementations.
 
 #include <cstdint>
-#include <cstring>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -19,6 +18,25 @@ inline void write_u32_le(std::vector<uint8_t>& out, uint32_t value) {
         out.push_back(static_cast<uint8_t>((value >> (i * BITS_PER_BYTE)) & 0xFFu));
     }
 }
+
+inline uint32_t read_u32_le(const uint8_t* data) {
+    uint32_t value = 0;
+    for (std::size_t i = 0; i < U32_SIZE; ++i) {
+        value |= static_cast<uint32_t>(data[i]) << (i * BITS_PER_BYTE);
+    }
+    return value;
+}
+
+namespace detail {
+
+inline void throw_unrecognized_magic(MagicClass cls, const char* algo_name, bool use_legacy_check) {
+    if (use_legacy_check && cls == MagicClass::Legacy) {
+        throw std::runtime_error(std::string(algo_name) + ": unsupported legacy format");
+    }
+    throw std::runtime_error(std::string(algo_name) + ": bad magic");
+}
+
+}  // namespace detail
 
 // Appends a 4-byte magic prefix.
 inline void write_magic(std::vector<uint8_t>& out, const char* magic) {
@@ -55,18 +73,12 @@ inline void verify_magic(const uint8_t* data, std::size_t size, std::size_t& pos
     if (size < MAGIC_SIZE) {
         throw std::runtime_error(std::string(algo_name) + ": input too short");
     }
-    if (bytes_equal(data, expected_magic)) {
+    MagicClass cls = classify_magic(data, size, expected_magic);
+    if (cls == MagicClass::V2) {
         pos = MAGIC_SIZE;
         return;
     }
-    if (use_legacy_check) {
-        // Check if it's a recognizable v1 magic (any of the three legacy magics).
-        if (bytes_equal(data, HUFFMAN_LEGACY_MAGIC) || bytes_equal(data, ARITHMETIC_LEGACY_MAGIC) ||
-            bytes_equal(data, RANGE_LEGACY_MAGIC)) {
-            throw std::runtime_error(std::string(algo_name) + ": unsupported legacy format");
-        }
-    }
-    throw std::runtime_error(std::string(algo_name) + ": bad magic");
+    detail::throw_unrecognized_magic(cls, algo_name, use_legacy_check);
 }
 
 // Reads a frequency table following the magic prefix.
@@ -76,10 +88,7 @@ inline std::vector<uint32_t> read_frequency_header(const uint8_t* data, std::siz
     if (pos + U32_SIZE > size) {
         throw std::runtime_error(std::string(algo_name) + ": truncated frequency count");
     }
-    uint32_t count = 0;
-    for (std::size_t i = 0; i < U32_SIZE; ++i) {
-        count |= static_cast<uint32_t>(data[pos + i]) << (i * BITS_PER_BYTE);
-    }
+    uint32_t count = read_u32_le(data + pos);
     pos += U32_SIZE;
     if (count != SYMBOL_LIMIT) {
         throw std::runtime_error(std::string(algo_name) + ": bad frequency count");
@@ -89,11 +98,7 @@ inline std::vector<uint32_t> read_frequency_header(const uint8_t* data, std::siz
         if (pos + U32_SIZE > size) {
             throw std::runtime_error(std::string(algo_name) + ": truncated frequency entry");
         }
-        uint32_t v = 0;
-        for (std::size_t b = 0; b < U32_SIZE; ++b) {
-            v |= static_cast<uint32_t>(data[pos + b]) << (b * BITS_PER_BYTE);
-        }
-        freq[i] = v;
+        freq[i] = read_u32_le(data + pos);
         pos += U32_SIZE;
     }
     return freq;
@@ -119,15 +124,11 @@ inline void precheck_magic(const std::vector<uint8_t>& input, const char* expect
     if (input.size() < MAGIC_SIZE) {
         return;  // Let verify_crc32/verify_magic handle short input
     }
-    if (bytes_equal(input.data(), expected_v2_magic)) {
-        return;  // v2 magic — proceed to CRC and body
+    MagicClass cls = classify_magic(input.data(), input.size(), expected_v2_magic);
+    if (cls == MagicClass::V2) {
+        return;
     }
-    if (use_legacy_check && (bytes_equal(input.data(), HUFFMAN_LEGACY_MAGIC) ||
-                             bytes_equal(input.data(), ARITHMETIC_LEGACY_MAGIC) ||
-                             bytes_equal(input.data(), RANGE_LEGACY_MAGIC))) {
-        throw std::runtime_error(std::string(algo_name) + ": unsupported legacy format");
-    }
-    throw std::runtime_error(std::string(algo_name) + ": bad magic");
+    detail::throw_unrecognized_magic(cls, algo_name, use_legacy_check);
 }
 
 }  // namespace compresskit

@@ -24,18 +24,14 @@ def sha256(path: Path) -> str:
 
 
 def decode(binary: Path, archive: Path, output: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
+    return metadata.run_cli(
         [str(binary), "decode", str(archive), str(output)],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
         timeout=TIMEOUT_SECONDS,
-        check=False,
     )
 
 
 def main() -> int:
+    metadata.require_binaries()
     if not MANIFEST_PATH.is_file():
         raise SystemExit(f"missing fixture manifest: {MANIFEST_PATH}")
 

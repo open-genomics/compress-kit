@@ -1,5 +1,4 @@
-#ifndef COMPRESSKIT_CLI_LAUNCHER_HPP
-#define COMPRESSKIT_CLI_LAUNCHER_HPP
+#pragma once
 
 #include "compresskit/buffer_api.hpp"
 
@@ -17,5 +16,3 @@ int run(const Algorithm& algo, int argc, char** argv);
 
 }  // namespace cli
 }  // namespace compresskit
-
-#endif  // COMPRESSKIT_CLI_LAUNCHER_HPP

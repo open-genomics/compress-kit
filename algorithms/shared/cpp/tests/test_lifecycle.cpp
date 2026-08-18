@@ -1,8 +1,8 @@
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <numeric>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "compresskit/algorithms.hpp"
@@ -28,8 +28,10 @@ void check(bool cond, const char* expr, int line) {
 
 struct AlgorithmCase {
     const char* name;
+    const char* magic;
     compresskit::BufferTransform encode;
     compresskit::BufferTransform decode;
+    bool has_frequency_header;
 };
 
 void test_roundtrip(const AlgorithmCase& algo, const std::vector<uint8_t>& input) {
@@ -44,10 +46,10 @@ void test_roundtrip(const AlgorithmCase& algo, const std::vector<uint8_t>& input
 }
 
 template <typename Fn>
-void expect_throw(const char* label, Fn fn) {
+void expect_throw(const std::string& label, Fn fn) {
     try {
         fn();
-        std::fprintf(stderr, "FAIL %s: expected exception, got success\n", label);
+        std::fprintf(stderr, "FAIL %s: expected exception, got success\n", label.c_str());
         ++failures;
     } catch (const std::exception&) {
         // Rejection is the contract for corrupt input.
@@ -79,29 +81,21 @@ std::vector<uint8_t> make_lcg(std::size_t n) {
 void test_rejects_corrupt_input(const AlgorithmCase& algo) {
     const std::string label = algo.name;
 
-    expect_throw((label + ": bad magic").c_str(), [&] {
+    expect_throw(label + ": bad magic", [&] {
         std::vector<uint8_t> garbage = {'X', 'X', 'X', 'X', 0, 0, 0, 0};
         algo.decode(garbage);
     });
 
     // Frequency tables must carry an EOF symbol; without one the entropy
     // decoders can never reach end-of-stream.
-    std::vector<uint32_t> no_eof(compresskit::SYMBOL_LIMIT, 1);
-    no_eof[compresskit::EOF_SYMBOL] = 0;
-    const char* magic = compresskit::RLE_MAGIC;
-    if (label == "Huffman") {
-        magic = compresskit::HUFFMAN_MAGIC;
-    } else if (label == "Arithmetic") {
-        magic = compresskit::ARITHMETIC_MAGIC;
-    } else if (label == "Range") {
-        magic = compresskit::RANGE_MAGIC;
-    }
-    if (label != "RLE") {
-        expect_throw((label + ": frequency table without EOF").c_str(),
-                     [&] { algo.decode(header_only(magic, no_eof)); });
+    if (algo.has_frequency_header) {
+        std::vector<uint32_t> no_eof(compresskit::SYMBOL_LIMIT, 1);
+        no_eof[compresskit::EOF_SYMBOL] = 0;
+        expect_throw(label + ": frequency table without EOF",
+                     [&] { algo.decode(header_only(algo.magic, no_eof)); });
         std::vector<uint32_t> zeros(compresskit::SYMBOL_LIMIT, 0);
-        expect_throw((label + ": all-zero frequency table").c_str(),
-                     [&] { algo.decode(header_only(magic, zeros)); });
+        expect_throw(label + ": all-zero frequency table",
+                     [&] { algo.decode(header_only(algo.magic, zeros)); });
     }
 
     // Truncating the payload of a real stream must fail loudly.
@@ -109,7 +103,7 @@ void test_rejects_corrupt_input(const AlgorithmCase& algo) {
     std::iota(data.begin(), data.end(), uint8_t{0});
     auto encoded = algo.encode(data);
     CHECK(encoded.size() > 16);
-    expect_throw((label + ": truncated stream").c_str(),
+    expect_throw(label + ": truncated stream",
                  [&] { algo.decode(std::vector<uint8_t>(encoded.begin(), encoded.begin() + 16)); });
 
     // The trailing CRC-32 must catch any single-byte corruption, anywhere
@@ -117,8 +111,7 @@ void test_rejects_corrupt_input(const AlgorithmCase& algo) {
     for (std::size_t pos : {std::size_t{0}, encoded.size() / 2, encoded.size() - 1}) {
         auto corrupted = encoded;
         corrupted[pos] ^= 0x40;
-        expect_throw((label + ": corrupted byte detected").c_str(),
-                     [&] { algo.decode(corrupted); });
+        expect_throw(label + ": corrupted byte detected", [&] { algo.decode(corrupted); });
     }
 }
 
@@ -126,11 +119,14 @@ void test_rejects_corrupt_input(const AlgorithmCase& algo) {
 
 int main() {
     const AlgorithmCase algorithms[] = {
-        {"Huffman", compresskit::huffman_encode_buffer, compresskit::huffman_decode_buffer},
-        {"Arithmetic", compresskit::arithmetic_encode_buffer,
-         compresskit::arithmetic_decode_buffer},
-        {"Range", compresskit::rangecoder_encode_buffer, compresskit::rangecoder_decode_buffer},
-        {"RLE", compresskit::rle_encode_buffer, compresskit::rle_decode_buffer},
+        {"Huffman", compresskit::HUFFMAN_MAGIC, compresskit::huffman_encode_buffer,
+         compresskit::huffman_decode_buffer, true},
+        {"Arithmetic", compresskit::ARITHMETIC_MAGIC, compresskit::arithmetic_encode_buffer,
+         compresskit::arithmetic_decode_buffer, true},
+        {"Range", compresskit::RANGE_MAGIC, compresskit::rangecoder_encode_buffer,
+         compresskit::rangecoder_decode_buffer, true},
+        {"RLE", compresskit::RLE_MAGIC, compresskit::rle_encode_buffer,
+         compresskit::rle_decode_buffer, false},
     };
 
     struct Corpus {

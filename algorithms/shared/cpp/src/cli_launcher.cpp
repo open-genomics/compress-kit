@@ -1,6 +1,7 @@
 #include "compresskit/cli_launcher.hpp"
 
 #include <iostream>
+#include <string>
 
 namespace compresskit {
 namespace cli {
@@ -20,8 +21,7 @@ int run(const Algorithm& algo, int argc, char** argv) {
     std::string input_path = argv[2];
     std::string output_path = argv[3];
 
-    bool ok = true;
-
+    bool ok = false;
     if (mode == "encode") {
         ok = encode_file_via_buffer(algo.encode, input_path, output_path);
     } else if (mode == "decode") {

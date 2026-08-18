@@ -12,14 +12,15 @@
 #include <vector>
 
 #include "compresskit/constants.hpp"
+#include "compresskit/serialization.hpp"
 
 namespace compresskit {
 
 namespace detail {
 
-inline constexpr std::array<uint32_t, 256> make_crc_table() {
-    std::array<uint32_t, 256> table{};
-    for (uint32_t i = 0; i < 256; ++i) {
+inline constexpr std::array<uint32_t, BYTE_VALUES> make_crc_table() {
+    std::array<uint32_t, BYTE_VALUES> table{};
+    for (uint32_t i = 0; i < BYTE_VALUES; ++i) {
         uint32_t c = i;
         for (int k = 0; k < BITS_PER_BYTE; ++k) {
             c = (c & 1) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
@@ -29,7 +30,7 @@ inline constexpr std::array<uint32_t, 256> make_crc_table() {
     return table;
 }
 
-inline constexpr std::array<uint32_t, 256> CRC_TABLE = make_crc_table();
+inline constexpr std::array<uint32_t, BYTE_VALUES> CRC_TABLE = make_crc_table();
 
 }  // namespace detail
 
@@ -43,10 +44,7 @@ inline uint32_t crc32(const uint8_t* data, std::size_t size) {
 
 // Appends the CRC-32 of everything currently in `out`, little-endian.
 inline void append_crc32(std::vector<uint8_t>& out) {
-    uint32_t c = crc32(out.data(), out.size());
-    for (std::size_t i = 0; i < CRC32_SIZE; ++i) {
-        out.push_back(static_cast<uint8_t>((c >> (i * BITS_PER_BYTE)) & 0xFFu));
-    }
+    write_u32_le(out, crc32(out.data(), out.size()));
 }
 
 // Verifies the trailing CRC-32 of `input`. Returns the content size
@@ -56,10 +54,7 @@ inline std::size_t verify_crc32(const std::vector<uint8_t>& input, const char* a
         throw std::runtime_error(std::string(algo_name) + ": truncated checksum");
     }
     std::size_t content = input.size() - CRC32_SIZE;
-    uint32_t stored = 0;
-    for (std::size_t i = 0; i < CRC32_SIZE; ++i) {
-        stored |= static_cast<uint32_t>(input[content + i]) << (i * BITS_PER_BYTE);
-    }
+    uint32_t stored = read_u32_le(input.data() + content);
     if (crc32(input.data(), content) != stored) {
         throw std::runtime_error(std::string(algo_name) + ": checksum mismatch");
     }
