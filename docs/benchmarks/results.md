@@ -39,5 +39,5 @@ cd docs && npm run build
 ## 另见
 
 - [如何运行基准测试](/benchmarks/how-to-run)
-- [算法指南](/guide/algorithms)
-- [熵对照](/academy/) — `make stats`
+- [算法说明](/algorithms/huffman) — 各算法原理与文件格式
+- 熵对照：`make stats` 打印输入的 Shannon 熵与各算法实际比特/字节

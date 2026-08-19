@@ -1,79 +1,68 @@
-# Arithmetic
+---
+title: 算术编码
+description: 区间划分的熵编码、实现与文件格式
+---
 
-Arithmetic 是一种无损数据压缩算法，将**整个消息编码为区间 [0, 1) 中的单个数字**。这种方法比 Huffman 更接近熵极限。
+# 算术编码
+
+算术编码把**整条消息**映射到半开区间 `[0, 1)` 中的一个数值，而非为每个符号
+分配整数比特的码字。平均码长可逼近信息熵 `L ≈ H + ε`，不受 Huffman
+「每符号至少 1 比特」的限制。
 
 ## 工作原理
 
-与 Huffman 为每个符号分配整数位长的编码不同，Arithmetic 可以分配**分数位长的编码**，使其更接近理论熵极限。
+设符号 `s` 的概率为 `p_s`、累积概率为 `F(s)`。当前区间 `[low, high)` 编码 `s`
+后收缩为 `[low + (high-low)F(s), low + (high-low)F(s+p_s))`。消息越长区间越窄，
+所需比特数约为 `-log2(high-low)`。
 
-::: tip 示例说明
-以下伪代码使用浮点数演示算术编码的**原理**。CompressKit 的 C++17 实现使用
-固定宽度整数运算（带缩放与重归一化）以避免浮点精度问题，与下方伪代码不直接对应。
-:::
+> 下方伪代码用浮点演示原理；本仓库的 C++17 实现使用固定宽度整数、缩放频率表
+> 与位级重归一化，避免浮点精度耗尽。
 
 ```cpp
-void encode(const vector<uint8_t>& data, 
-            const vector<double>& probs) {
-    double low = 0.0;
-    double high = 1.0;
-    
-    for (uint8_t symbol : data) {
-        double range = high - low;
-        high = low + range * cumProb[symbol + 1];
-        low = low + range * cumProb[symbol];
-    }
-    
-    // 输出 [low, high) 中的数字
-    output_bits = ceil(-log2(high - low));
-    write_value((low + high) / 2, output_bits);
+double low = 0.0, high = 1.0;
+for (uint8_t s : data) {
+    double range = high - low;
+    high = low + range * cumProb[s + 1];
+    low  = low + range * cumProb[s];
 }
 ```
 
-## Arithmetic vs Huffman
+## 本仓库实现
 
-| 方面 | Huffman | Arithmetic |
-|------|--------|----------|
-| 编码长度 | 整数位 | 分数位 |
-| 效率 | H ≤ L < H + 1 | L ≈ H + ε |
-| 速度 | 更快 | 较慢 |
-| 复杂度 | 简单 | 精度管理 |
-| 输出 | 位 | 单个数字 |
+- **静态模型**：先扫描全文得到 256 字节频率，再加 EOF 符号，编码期间不更新。
+- **频率缩放**：总和限制在 `2^24`，保证 `range / total` 不会把子区间压成 0。
+- **EOF**：解码器读到 EOF 符号后停止，不依赖外部长度字段。
+- **整数运算**：固定宽度整数 + 位级重归一化，周期性输出位以避免下溢。
+- v1 magic `AENC` 被明确拒绝。
+
+## 文件格式
+
+| 字段 | 大小 | 描述 |
+|------|------|------|
+| Magic | 4 字节 | `AEN2` |
+| 频率表大小 | 4 字节 | 小端 uint32（始终 257） |
+| 频率表 | 257 × 4 字节 | 小端 uint32 数组（符号 0-255 + EOF） |
+| 编码数据 | 可变 | 位流（重归一化区间输出） |
+| CRC-32 | 4 字节 | 小端序，覆盖此前全部字节；解码前强制校验 |
+
+## 命令行用法
+
+```bash
+./build/arithmetic_cpp encode input.bin output.aenc
+./build/arithmetic_cpp decode output.aenc restored.bin
+```
 
 ## 复杂度
 
 | 方面 | 复杂度 | 说明 |
 |------|--------|------|
-| 时间（编码） | O(n) | 单次遍历，区间更新 |
-| 时间（解码） | O(n) | 逆过程 |
+| 时间（编码/解码） | O(n) | 单次遍历，区间更新 |
 | 空间 | O(σ) | 概率表 |
-| 精度 | 固定 | 需要小心处理下溢 |
+| 精度 | 固定 | 整数运算 + 重归一化 |
 
-## 精度考虑
+## 注意事项
 
-Arithmetic 需要管理精度以避免下溢：
-
-1. **重归一化**：当区间变得太小时周期性输出位
-2. **整数运算**：生产实现使用带缩放的整数运算
-3. **流结束标记**：解码时需要知道何时完成
-
-## 适用场景
-
-- ✅ **最大压缩** — 当每个位都很重要时
-- ✅ **统计数据** — 已有概率模型的数据
-- ✅ **学术研究** — 理解熵编码
-- ❌ **实时流处理** — 精度管理复杂
-- ❌ **嵌入式系统** — 浮点运算需求
-
-## 性能
-
-| 输入类型 | 压缩率 | 速度 |
-|----------|--------|------|
-| 文本 | 1.8-2.0× | 中等 |
-| 随机 | 0.99× | 中等 |
-| 重复 | 50-100× | 中等 |
-
-## 延伸阅读
-
-- [Range Coder](/algorithms/range) — 用于生产环境的整数实现
-- [Huffman](/algorithms/huffman) — 更简单的替代方案
-- [基准测试](/benchmarks/results)
+- 偏斜分布上与 Huffman 压缩率接近；接近均匀分布时优势更明显。
+- 仍需为频率表付出约 1 KiB 固定开销，对小文件不划算。
+- 用 `make stats` 可对照 Shannon 熵与实际码长。
+- 详见 [基准测试](/benchmarks/results) 与 [架构概览](/architecture/)。

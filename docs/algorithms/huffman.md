@@ -1,89 +1,64 @@
-# Huffman
+---
+title: Huffman 编码
+description: 最优前缀码的原理、实现与文件格式
+---
 
-Huffman 是一种无损数据压缩算法，使用**变长编码**来表示符号。出现频率较高的符号使用较短的编码，出现频率较低的符号使用较长的编码。
+# Huffman 编码
+
+Huffman 编码使用**变长前缀码**：出现频率高的符号用短码，频率低的用长码。
+它构造的二叉树在所有前缀码中平均码长最短，满足 `H ≤ L < H + 1`（H 为熵）。
 
 ## 工作原理
+
+每次合并两个频率最小的节点，自底向上构建二叉树；从根到叶的路径即为编码
+（左 0、右 1）。频率相同时按符号值排序，保证同一输入得到同一棵树、同一份输出。
 
 ```cpp
 struct Node {
     uint32_t symbol = 0;
     uint64_t freq = 0;
-    int32_t left = -1;
+    int32_t left = -1;   // -1 = 无孩子
     int32_t right = -1;
 };
-
-int32_t buildHuffmanTree(const vector<uint32_t>& freq, vector<Node>& nodes) {
-    priority_queue<HeapItem, vector<HeapItem>, HeapCmp> pq;
-    for (uint32_t i = 0; i < 256; i++) {
-        if (freq[i] > 0) {
-            int32_t idx = static_cast<int32_t>(nodes.size());
-            nodes.push_back({i, freq[i], -1, -1});
-            pq.push({freq[i], i, idx});
-        }
-    }
-    while (pq.size() > 1) {
-        HeapItem left = pq.top(); pq.pop();
-        HeapItem right = pq.top(); pq.pop();
-        int32_t parent = static_cast<int32_t>(nodes.size());
-        nodes.push_back({min(left.symbol, right.symbol),
-                         left.freq + right.freq, left.index, right.index});
-        pq.push({left.freq + right.freq,
-                 min(left.symbol, right.symbol), parent});
-    }
-    return pq.top().index;
-}
+// 节点存于 vector<Node> arena，用下标当左右孩子，避免指针管理。
 ```
 
-## 算法步骤
+## 本仓库实现
 
-1. **频率统计**：统计输入中每个字节的出现频率
-2. **构建树**：构建二叉树，频率较低的符号路径更深
-3. **生成编码**：生成前缀编码（没有任何编码是另一个编码的前缀）
-4. **编码**：将每个字节替换为对应的位编码
-5. **解码**：根据位序列遍历树来重建原始数据
-
-## 复杂度
-
-| 方面 | 复杂度 | 说明 |
-|------|--------|------|
-| 时间（构建） | O(σ log σ) | σ = 字母表大小（最大 256） |
-| 时间（编码） | O(n) | n = 输入大小 |
-| 时间（解码） | O(n) | 单次遍历 |
-| 空间 | O(σ) | 频率表 + 树 |
+- 节点存于 `vector<Node>` arena，用下标代替指针。
+- 频率相同时按符号值排序，保证确定性输出（同一输入 → 同一比特流）。
+- 单符号输入特殊处理：码长为 1，编码为 `0`。
+- 频率为 0 的符号跳过，不参与编码。
+- 空输入返回预定义错误码。
 
 ## 文件格式
 
 | 字段 | 大小 | 描述 |
 |------|------|------|
 | Magic | 4 字节 | `HFM2` (0x48 0x46 0x4D 0x32) |
-| 频率表 | 257 × 4 字节 | 小端序 uint32 数组 |
+| 频率表大小 | 4 字节 | 小端 uint32（始终 257） |
+| 频率表 | 257 × 4 字节 | 小端 uint32 数组（符号 0-255 + EOF） |
 | 编码数据 | 可变 | 位流，填充到字节边界 |
 | CRC-32 | 4 字节 | 小端序，覆盖此前全部字节；解码前强制校验 |
 
-## 压缩效率
-
-- **理论上界**：平均编码长度 ≥ 熵 H
-- **Huffman 上界**：H ≤ L < H + 1 位每符号
-- **最适用于**：频率分布不均匀的数据
-
-## 适用场景
-
-- ✅ **文本文件** — 自然语言的字符频率不均匀
-- ✅ **通用二进制数据** — 性能均衡
-- ✅ **预处理** — 常用于其他变换之前
-- ❌ **随机数据** — 接近 1× 压缩率（仅增加开销）
-
-## 命令行使用
+## 命令行用法
 
 ```bash
 ./build/huffman_cpp encode input.txt output.huf
 ./build/huffman_cpp decode output.huf restored.txt
 ```
 
-## 延伸阅读
+## 复杂度
 
-- [霍夫曼编码深度解析](/academy/huffman) - 算法学院：原理、证明与实现细节
-- [算术编码](/algorithms/arithmetic) - 分数位编码，更接近熵极限
-- [区间编码](/algorithms/range) - 整数实现的工程变体
-- [算法对比](/guide/algorithms) - 四种算法的选择指南
-- [基准测试](/benchmarks/results) - 实测性能数据
+| 方面 | 复杂度 | 说明 |
+|------|--------|------|
+| 时间（构建树） | O(σ log σ) | σ = 字母表大小（最大 256） |
+| 时间（编码/解码） | O(n) | n = 输入长度 |
+| 空间 | O(σ) | 频率表 + 树 |
+
+## 注意事项
+
+- 码长必须为整数，因此不如算术编码逼近熵；接近均匀分布时优势不明显。
+- 频率表固定约 1 KiB 开销，对小文件不划算。
+- 对随机数据接近 1× 压缩率（仅增加表头开销）。
+- 详见 [基准测试](/benchmarks/results) 与 [架构概览](/architecture/)。

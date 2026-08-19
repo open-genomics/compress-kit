@@ -110,6 +110,6 @@ clang++ -std=c++17 -O2 main.cpp -o huffman_cpp
 
 ## 下一步
 
-- 了解 [算法详解](/guide/algorithms) 及其差异
-- 阅读 [架构总览](/guide/architecture)
+- 阅读 [算法说明](/algorithms/huffman) 了解各算法原理与差异
+- 查看 [架构概览](/architecture/) 了解系统分层与二进制格式
 - 查看 [CHANGELOG](https://github.com/open-genomics/compress-kit/blob/master/CHANGELOG.md) 了解最新更新

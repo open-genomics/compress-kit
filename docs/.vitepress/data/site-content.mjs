@@ -152,7 +152,7 @@ const navCatalog = [
   {
     id: 'algorithms',
     text: { zh: '算法' },
-    link: '/guide/algorithms',
+    link: '/algorithms/huffman',
     activeMatch: { zh: '/algorithms/' },
   },
   {
@@ -175,27 +175,21 @@ const sidebarCatalog = [
     items: [
       { text: { zh: '项目介绍' }, link: '/' },
       { text: { zh: '快速开始' }, link: '/guide/getting-started' },
-      { text: { zh: '架构设计' }, link: '/guide/architecture' },
     ],
   },
   {
-    title: { zh: '学院' },
+    title: { zh: '算法说明' },
     items: [
-      { text: { zh: '算法学院' }, link: '/academy/' },
-      { text: { zh: '霍夫曼编码深度解析' }, link: '/academy/huffman' },
-      { text: { zh: '算术编码深度解析' }, link: '/academy/arithmetic' },
-      { text: { zh: '区间编码深度解析' }, link: '/academy/range' },
-      { text: { zh: '行程编码深度解析' }, link: '/academy/rle' },
-    ],
-  },
-  {
-    title: { zh: '算法详解' },
-    items: [
-      { text: { zh: '算法综述' }, link: '/guide/algorithms' },
       { text: { zh: '霍夫曼编码' }, link: '/algorithms/huffman' },
       { text: { zh: '算术编码' }, link: '/algorithms/arithmetic' },
       { text: { zh: '区间编码' }, link: '/algorithms/range' },
       { text: { zh: '行程编码' }, link: '/algorithms/rle' },
+    ],
+  },
+  {
+    title: { zh: '架构' },
+    items: [
+      { text: { zh: '架构概览' }, link: '/architecture/' },
     ],
   },
   {
@@ -209,13 +203,6 @@ const sidebarCatalog = [
     items: [
       { text: { zh: '性能结果' }, link: '/benchmarks/results' },
       { text: { zh: '如何运行' }, link: '/benchmarks/how-to-run' },
-    ],
-  },
-  {
-    title: { zh: '参考' },
-    items: [
-      { text: { zh: '系统架构设计' }, link: '/architecture/' },
-      { text: { zh: '更新日志' }, link: '/release-notes/changelog' },
     ],
   },
 ]

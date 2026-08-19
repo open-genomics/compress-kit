@@ -11,7 +11,7 @@ make bench
 这会构建 CLI、生成语料，对每个算法 × 数据集做 encode/decode 计时，并覆盖 JSON 快照。随后：
 
 ```bash
-cd docs && npm ci && npm test && npm run build
+cd docs && npm ci && npm run build
 ```
 
 ## 当前数据集

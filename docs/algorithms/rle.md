@@ -1,109 +1,69 @@
-# RLE
+---
+title: RLE 行程编码
+description: 行程对的简单变换、膨胀上界与文件格式
+---
 
-RLE（行程编码）是**最简单的压缩算法**，将连续重复的字节替换为 `(计数, 值)` 对。它速度极快，对具有长连续相同值的数据效果非常好。
+# RLE 行程编码
+
+RLE（Run-Length Encoding）把连续相同字节替换为 `(count, value)` 对。它没有
+熵模型，速度极快，对长连续重复数据效果极好；但对不可压缩数据会膨胀。
 
 ## 工作原理
 
+输入 `AAAABB` 变成两段：`(4, 'A')`、`(2, 'B')`。本实现中 `count` 是小端
+`uint32`，`value` 是 1 字节，每段 5 字节。
+
 ```cpp
-vector<uint8_t> encode(const vector<uint8_t>& data) {
-    vector<uint8_t> result;
-    
-    for (size_t i = 0; i < data.size();) {
-        uint8_t current = data[i];
-        uint32_t count = 1;
-        
-        // 统计连续相同字节
-        while (i + count < data.size() && 
-               data[i + count] == current && 
-               count < UINT32_MAX) {
-            count++;
-        }
-        
-        // 写入计数（4 字节，小端序）+ 值
-        result.push_back(count & 0xFF);
-        result.push_back((count >> 8) & 0xFF);
-        result.push_back((count >> 16) & 0xFF);
-        result.push_back((count >> 24) & 0xFF);
-        result.push_back(current);
-        
-        i += count;
-    }
-    
-    return result;
+for (size_t i = 0; i < data.size();) {
+    uint8_t cur = data[i];
+    uint32_t count = 1;
+    while (i + count < data.size() && data[i + count] == cur && count < UINT32_MAX)
+        ++count;
+    write_u32_le(count);   // 4 字节小端
+    write_u8(cur);         // 1 字节
+    i += count;
 }
 ```
 
-## 文件格式
+## 本仓库实现
 
-魔数后跟随若干 `(count, value)` 行程对，每个对 5 字节：
+- 无频率表、无树，额外空间 O(1)（输出缓冲除外）。
+- `count` 必须大于 0；解码时若 `count == 0` 或累加输出将超过 1 GiB，一律拒绝。
+- 空输入合法：只写 magic + CRC。
+- v1 RLE **没有 magic**；当前解码器对非 `RLE2` 前缀报 `bad magic`，不会去猜
+  旧行程对格式。
+
+## 文件格式
 
 | 字段 | 大小 | 描述 |
 |------|------|------|
-| 魔数 | 4 字节 | `RLE2` (0x52 0x4C 0x45 0x32) |
+| Magic | 4 字节 | `RLE2` (0x52 0x4C 0x45 0x32) |
 | 行程对 0 | 5 字节 | `count` (4 字节小端 uint32) + `value` (1 字节) |
-| 行程对 1 | 5 字节 | `count` (4 字节小端 uint32) + `value` (1 字节) |
+| 行程对 1 | 5 字节 | 同上 |
 | ... | ... | 重复直到编码数据结束 |
 | CRC-32 | 4 字节 | 小端序，覆盖此前全部字节；解码前强制校验 |
 
-每个行程对将连续 `count` 次的 `value` 字节还原。最坏情况下（无重复）每个输入字节扩展为 5 字节，导致 **5 倍膨胀**。
+## 命令行用法
+
+```bash
+./build/rle_cpp encode input.bin output.rle
+./build/rle_cpp decode output.rle restored.bin
+```
 
 ## 复杂度
 
 | 方面 | 复杂度 | 说明 |
 |------|--------|------|
-| 时间（编码） | O(n) | 单次遍历 |
-| 时间（解码） | O(n) | 单次遍历，非常快 |
+| 时间（编码/解码） | O(n) | 单次遍历 |
 | 空间 | O(1) | 无辅助结构 |
 
-## 性能
+## 注意事项
 
-| 数据类型 | 压缩率 | 速度 |
-|----------|--------|------|
-| 重复数据 (10 MB) | 25× | 300+ MiB/s |
-| 文本 | 1.1× | 快 |
-| 随机 | 0.2×（膨胀） | 快 |
-
-::: warning 最坏情况
-对于随机数据，RLE 将每个字节扩展为 5 字节（4 字节计数 + 1 字节值），导致 **5 倍大小增加**。
-:::
-
-## 适用场景
-
-- ✅ **位图图像** — 长连续相同颜色
-- ✅ **日志文件** — 重复模式
-- ✅ **预处理** — 在 BWT 或其他变换之前
-- ✅ **传真传输** — 标准压缩方法
-- ❌ **随机数据** — 严重膨胀
-- ❌ **已压缩数据** — 无收益
-
-## 常见用途
-
-### 作为预处理
-
-RLE 常作为更复杂压缩流程的预处理步骤：
-
-```
-原始数据 → BWT → MTF → RLE → Arithmetic → 压缩数据
-```
-
-这种组合（Burrows-Wheeler + Move-to-Front + RLE + Arithmetic）是 **bzip2** 的基础。
-
-### 图像格式中
-
-- **BMP**：简单 RLE 变体
-- **PCX**：RLE 压缩
-- **TIFF**：可选 RLE packbits
-
-## 与其他算法对比
-
-| 算法 | 初始化开销 | 压缩率 | 速度 |
-|------|------------|--------|------|
-| RLE | 无 | 可变 | 最快 |
-| Huffman | O(σ log σ) | 中等 | 快 |
-| Range Coder | O(n) | 高 | 快 |
-
-## 延伸阅读
-
-- [算法对比](/guide/algorithms) — 完整对比矩阵
-- [基准测试](/benchmarks/results) — 性能数据
-- [Burrows-Wheeler 变换](https://en.wikipedia.org/wiki/Burrows%E2%80%93Wheeler_transform) — 常与 RLE 配合使用
+- **最坏膨胀约 5×**：无重复时每个输入字节变成 5 字节。这正是压缩输入上限
+  （8 GiB）大于原始数据上限（1 GiB）的原因——一份不可压缩的 1 GiB 输入，
+  RLE 流可能接近 5 GiB。
+- 适合位图、掩码、大量连续 0/1 等长重复数据。
+- **不要**对已压缩或接近随机的数据使用，除非在演示膨胀。
+- 用 `make stats` 可在 `repetitive_10MiB`（ratio 远小于 1）与 `random_1MiB`
+  （ratio 接近 5）上对照。
+- 详见 [基准测试](/benchmarks/results) 与 [架构概览](/architecture/)。
